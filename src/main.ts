@@ -155,7 +155,7 @@ function handleTool(e: MouseEvent) {
 
 // Rendering setup
 import { Renderer } from './render';
-const renderer = new Renderer(canvas);
+const renderer = new Renderer();
 
 function resizeCanvasToViewport() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -212,7 +212,7 @@ function frame(now: number) {
   ctx.imageSmoothingEnabled = false;
   ctx.save();
   ctx.scale(scaleX, scaleY);
-  ctx.drawImage(renderer.canvas, 0, 0);
+  ctx.drawImage((renderer as any).buffer, 0, 0);
   ctx.restore();
 
   hud.update(now, field, agents, toolName(tool));
