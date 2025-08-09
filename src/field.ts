@@ -56,6 +56,25 @@ export class Field {
     }
   }
 
+  // Iteration 01 tweak: write directly into memory as a brush (used by repel)
+  addMemoryCircle(xc: number, yc: number, radius: number, amount: number) {
+    const r2 = radius * radius;
+    const x0 = Math.max(0, Math.floor(xc - radius));
+    const x1 = Math.min(this.width - 1, Math.ceil(xc + radius));
+    const y0 = Math.max(0, Math.floor(yc - radius));
+    const y1 = Math.min(this.height - 1, Math.ceil(yc + radius));
+    for (let y = y0; y <= y1; y++) {
+      const dy = y - yc;
+      for (let x = x0; x <= x1; x++) {
+        const dx = x - xc;
+        if (dx * dx + dy * dy <= r2) {
+          const idx = indexOf(x, y, this.width);
+          this.memory[idx] = clamp(this.memory[idx] + amount, -1.0, 1.0);
+        }
+      }
+    }
+  }
+
   halveCircle(xc: number, yc: number, radius: number) {
     const r2 = radius * radius;
     const x0 = Math.max(0, Math.floor(xc - radius));
