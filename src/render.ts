@@ -8,8 +8,9 @@ import { gammaCorrect, indexOf } from './utils';
 const PALETTE = {
   bg: { r: 10, g: 14, b: 19 }, // #0a0e13
   wall: { r: 28, g: 35, b: 44 }, // #1c232c
-  warmStart: [255, 136, 64] as [number, number, number], // #ff8840
-  warmEnd:   [250, 210, 120] as [number, number, number], // toned-down butter
+  // "Warm" branch retuned to mysterious indigo → lavender (no yellows)
+  warmStart: [58, 42, 106] as [number, number, number], // #3a2a6a deep indigo
+  warmEnd:   [176, 150, 255] as [number, number, number], // #b096ff soft lavender
   coolStart: [32, 92, 148] as [number, number, number], // #205c94
   coolEnd:   [84, 210, 190] as [number, number, number], // toned-down aqua
   agentBase:    [90, 210, 255] as [number, number, number], // icy cyan agent
