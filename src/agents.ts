@@ -31,7 +31,7 @@ export class AgentSystem {
     }
   }
 
-  private sampleFieldAverage(xc: number, yc: number, radius: number): number {
+  private samplePerceivedAverage(xc: number, yc: number, radius: number): number {
     const r = Math.max(0, Math.floor(radius));
     let sum = 0;
     let count = 0;
@@ -43,7 +43,10 @@ export class AgentSystem {
         const d2 = dx * dx + dy * dy;
         if (d2 <= r * r) {
           const idx = indexOf(x, y, this.field.width);
-          sum += this.field.values[idx];
+          // Iteration 01: agents perceive field with a subtle memory bias
+          const v = this.field.values[idx];
+          const m = this.field.memory[idx];
+          sum += v + m * this.params.memoryInfluence;
           count++;
         }
       }
@@ -65,9 +68,9 @@ export class AgentSystem {
       const rx = a.x + Math.cos(a.angle + p.sensorAngle) * p.sensorOffset;
       const ry = a.y + Math.sin(a.angle + p.sensorAngle) * p.sensorOffset;
 
-      const c = this.sampleFieldAverage(cx, cy, p.sensorRadius);
-      const l = this.sampleFieldAverage(lx, ly, p.sensorRadius);
-      const r = this.sampleFieldAverage(rx, ry, p.sensorRadius);
+      const c = this.samplePerceivedAverage(cx, cy, p.sensorRadius);
+      const l = this.samplePerceivedAverage(lx, ly, p.sensorRadius);
+      const r = this.samplePerceivedAverage(rx, ry, p.sensorRadius);
 
       // Turn toward max
       let targetAngle = a.angle;
@@ -94,8 +97,9 @@ export class AgentSystem {
         a.y = ny;
       }
 
-      // Deposit
+      // Deposit main field and faint memory echo
       this.field.deposit(a.x, a.y, p.depositPerStep);
+      this.field.depositMemory(a.x, a.y, p.depositPerStep * this.params.memoryDepositFactor * dt);
     }
   }
 }

@@ -22,4 +22,8 @@ export interface SimParams {
   depositPerStep: number;
   fieldMin: number;
   fieldMax: number;
+  // Hidden memory layer parameters (Iteration 01)
+  memoryInfluence: number; // weight of memory in sensors
+  memoryDepositFactor: number; // how much memory accumulates per agent deposit unit
+  memoryDecayPerSecond: number; // exponential decay per second (0..1)
 }

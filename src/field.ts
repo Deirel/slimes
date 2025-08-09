@@ -5,6 +5,8 @@ export class Field {
   height: number;
   values: Float32Array; // scalar field
   walls: Uint8Array; // 1 if wall
+  // Iteration 01: hidden memory layer storing faint echo of recent shapes
+  memory: Float32Array;
 
   // working buffers for diffusion
   private tmp: Float32Array;
@@ -14,6 +16,7 @@ export class Field {
     this.height = height;
     this.values = new Float32Array(width * height);
     this.walls = new Uint8Array(width * height);
+    this.memory = new Float32Array(width * height);
     this.tmp = new Float32Array(width * height);
   }
 
@@ -22,11 +25,13 @@ export class Field {
     this.height = height;
     this.values = new Float32Array(width * height);
     this.walls = new Uint8Array(width * height);
+    this.memory = new Float32Array(width * height);
     this.tmp = new Float32Array(width * height);
   }
 
   clearValues() {
     this.values.fill(0);
+    this.memory.fill(0);
   }
 
   clearWalls() {
@@ -119,6 +124,17 @@ export class Field {
     this.values[idx] = clamp(newVal, -2.5, 2.5);
   }
 
+  // Iteration 01: accumulate a faint memory echo near deposits
+  depositMemory(x: number, y: number, amount: number) {
+    const xi = Math.floor(x);
+    const yi = Math.floor(y);
+    if (xi < 0 || yi < 0 || xi >= this.width || yi >= this.height) return;
+    const idx = indexOf(xi, yi, this.width);
+    // saturate softly to avoid runaway; memory is intentionally low-range
+    const v = this.memory[idx] + amount;
+    this.memory[idx] = clamp(v, -1.0, 1.0);
+  }
+
   initializeCosineGradient() {
     const cx = this.width / 2;
     const cy = this.height / 2;
@@ -161,6 +177,15 @@ export class Field {
       }
       // swap
       this.values.set(dst);
+    }
+  }
+
+  // Iteration 01: slow exponential decay of memory each simulation sub-step
+  decayMemory(decayPerStep: number) {
+    if (decayPerStep <= 0) return;
+    const m = this.memory;
+    for (let i = 0; i < m.length; i++) {
+      m[i] *= (1 - decayPerStep);
     }
   }
 }

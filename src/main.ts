@@ -84,6 +84,10 @@ const params: SimParams = {
   depositPerStep: 1.1,
   fieldMin: -2.5,
   fieldMax: 2.5,
+  // Iteration 01: hidden memory layer tuning
+  memoryInfluence: 0.25,
+  memoryDepositFactor: 0.35,
+  memoryDecayPerSecond: 0.03,
 };
 
 const agents = new AgentSystem(field, params);
@@ -186,6 +190,8 @@ function frame(now: number) {
     for (let i = 0; i < 2; i++) {
       agents.update(subDt);
       field.diffuseAndEvaporate(diffusion * subDt, evaporation * subDt, 1);
+      // Iteration 01: decay memory slowly over time (exp-style)
+      field.decayMemory(Math.min(0.95, params.memoryDecayPerSecond * subDt));
     }
   }
 

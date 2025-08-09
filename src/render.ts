@@ -34,6 +34,8 @@ export class Renderer {
   buffer: HTMLCanvasElement;
   bctx: CanvasRenderingContext2D;
   imageData: ImageData;
+  // offscreen buffer for subtle memory shimmer
+  private memoryOverlay?: ImageData;
 
   constructor() {
     this.buffer = document.createElement('canvas');
@@ -93,6 +95,36 @@ export class Renderer {
         data[di + 1] = g;
         data[di + 2] = b;
         data[di + 3] = 255;
+      }
+    }
+
+    // Very subtle visualization of memory: occasional gentle brighten with phase noise
+    // This keeps it perceptual, not informational.
+    if (!this.memoryOverlay || this.memoryOverlay.width !== w || this.memoryOverlay.height !== h) {
+      this.memoryOverlay = this.bctx.createImageData(w, h);
+    }
+    const mo = this.memoryOverlay.data;
+    const t = (nowMs ?? 0) * 0.0015;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = indexOf(x, y, w);
+        const m = Math.abs(field.memory[i]);
+        if (m < 0.02) continue; // threshold to keep silence
+        // pseudo-random phase per pixel
+        const seed = (((x * 73856093) ^ (y * 19349663)) >>> 0) % 2048;
+        const phase = seed / 327.0;
+        const blink = 0.4 + 0.6 * Math.sin(t + phase);
+        const lift = Math.min(18, Math.floor(8 * m * blink));
+        const di = i * 4;
+        // channel-wise lighten
+        if (mo[di + 3] !== 255) {
+          mo[di] = 0; mo[di + 1] = 0; mo[di + 2] = 0; mo[di + 3] = 255;
+        }
+        // apply directly onto base image (we treat memoryOverlay as temp)
+        const nr = Math.min(255, data[di] + lift);
+        const ng = Math.min(255, data[di + 1] + lift);
+        const nb = Math.min(255, data[di + 2] + lift);
+        data[di] = nr; data[di + 1] = ng; data[di + 2] = nb;
       }
     }
 
