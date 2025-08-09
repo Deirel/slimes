@@ -88,6 +88,11 @@ const params: SimParams = {
   memoryInfluence: 0.2,
   memoryDepositFactor: 0.25,
   memoryDecayPerSecond: 0.08,
+  // Iteration 02 — latent flow tuning
+  flowInfluence: 0.4,
+  flowDepositPerSecond: 0.9,
+  flowDecayPerSecond: 0.12,
+  flowMaxMagnitude: 2.0,
 };
 
 const agents = new AgentSystem(field, params);
@@ -196,6 +201,8 @@ function frame(now: number) {
       field.diffuseAndEvaporate(diffusion * subDt, evaporation * subDt, 1);
       // Iteration 01: decay memory slowly over time (exp-style)
       field.decayMemory(Math.min(0.95, params.memoryDecayPerSecond * subDt));
+      // Iteration 02: decay latent flow vectors over time
+      field.decayFlow(Math.min(0.95, params.flowDecayPerSecond * subDt));
     }
   }
 

@@ -26,4 +26,9 @@ export interface SimParams {
   memoryInfluence: number; // weight of memory in sensors
   memoryDepositFactor: number; // how much memory accumulates per agent deposit unit
   memoryDecayPerSecond: number; // exponential decay per second (0..1)
+  // Iteration 02 — latent flow (vector field) parameters
+  flowInfluence: number; // weight of latent flow added to velocity (px/s multiplier)
+  flowDepositPerSecond: number; // how fast agents imprint direction into flow (units per second)
+  flowDecayPerSecond: number; // exponential decay per second (0..1)
+  flowMaxMagnitude: number; // clamp per-cell flow vector magnitude (px/s equivalent)
 }

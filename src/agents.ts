@@ -84,9 +84,19 @@ export class AgentSystem {
       const turn = clamp(angleDiff, -maxTurn, maxTurn) + (Math.random() * 2 - 1) * p.turnNoise * dt;
       a.angle = wrapAngle(a.angle + turn);
 
-      // Move forward
-      const nx = a.x + Math.cos(a.angle) * p.speed * dt;
-      const ny = a.y + Math.sin(a.angle) * p.speed * dt;
+      // Move forward with latent flow influence (Iteration 02)
+      const forwardVx = Math.cos(a.angle) * p.speed;
+      const forwardVy = Math.sin(a.angle) * p.speed;
+      // sample local flow vector (nearest pixel)
+      const xi = Math.max(0, Math.min(this.field.width - 1, Math.floor(a.x)));
+      const yi = Math.max(0, Math.min(this.field.height - 1, Math.floor(a.y)));
+      const idx = indexOf(xi, yi, this.field.width);
+      const flowVx = this.field.flowX[idx] * p.flowInfluence;
+      const flowVy = this.field.flowY[idx] * p.flowInfluence;
+      const vx = forwardVx + flowVx;
+      const vy = forwardVy + flowVy;
+      const nx = a.x + vx * dt;
+      const ny = a.y + vy * dt;
 
       // Handle wall and boundary collisions with reflection
       if (nx < 0 || ny < 0 || nx >= this.field.width || ny >= this.field.height || this.field.isWall(nx, ny)) {
@@ -100,6 +110,12 @@ export class AgentSystem {
       // Deposit main field and faint memory echo
       this.field.deposit(a.x, a.y, p.depositPerStep);
       this.field.depositMemory(a.x, a.y, p.depositPerStep * this.params.memoryDepositFactor * dt);
+
+      // Iteration 02: imprint latent flow in the direction of actual motion
+      const moveMag = Math.hypot(vx, vy) || 1;
+      const dirX = vx / moveMag;
+      const dirY = vy / moveMag;
+      this.field.depositFlow(a.x, a.y, dirX, dirY, p.flowDepositPerSecond * dt, p.flowMaxMagnitude);
     }
   }
 }

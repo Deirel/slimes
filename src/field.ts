@@ -7,6 +7,9 @@ export class Field {
   walls: Uint8Array; // 1 if wall
   // Iteration 01: hidden memory layer storing faint echo of recent shapes
   memory: Float32Array;
+  // Iteration 02: latent flow vector field accumulating common directions
+  flowX: Float32Array;
+  flowY: Float32Array;
 
   // working buffers for diffusion
   private tmp: Float32Array;
@@ -17,6 +20,8 @@ export class Field {
     this.values = new Float32Array(width * height);
     this.walls = new Uint8Array(width * height);
     this.memory = new Float32Array(width * height);
+    this.flowX = new Float32Array(width * height);
+    this.flowY = new Float32Array(width * height);
     this.tmp = new Float32Array(width * height);
   }
 
@@ -26,12 +31,16 @@ export class Field {
     this.values = new Float32Array(width * height);
     this.walls = new Uint8Array(width * height);
     this.memory = new Float32Array(width * height);
+    this.flowX = new Float32Array(width * height);
+    this.flowY = new Float32Array(width * height);
     this.tmp = new Float32Array(width * height);
   }
 
   clearValues() {
     this.values.fill(0);
     this.memory.fill(0);
+    this.flowX.fill(0);
+    this.flowY.fill(0);
   }
 
   clearWalls() {
@@ -205,6 +214,38 @@ export class Field {
     const m = this.memory;
     for (let i = 0; i < m.length; i++) {
       m[i] *= (1 - decayPerStep);
+    }
+  }
+
+  // Iteration 02: exponential decay of latent flow vectors
+  decayFlow(decayPerStep: number) {
+    if (decayPerStep <= 0) return;
+    const fx = this.flowX;
+    const fy = this.flowY;
+    const keep = (1 - decayPerStep);
+    for (let i = 0; i < fx.length; i++) {
+      fx[i] *= keep;
+      fy[i] *= keep;
+    }
+  }
+
+  // Iteration 02: accumulate latent flow in the direction of motion
+  depositFlow(x: number, y: number, vx: number, vy: number, amount: number, maxMag: number) {
+    const xi = Math.floor(x);
+    const yi = Math.floor(y);
+    if (xi < 0 || yi < 0 || xi >= this.width || yi >= this.height) return;
+    const idx = indexOf(xi, yi, this.width);
+    const fx = this.flowX[idx] + vx * amount;
+    const fy = this.flowY[idx] + vy * amount;
+    // clamp magnitude to avoid runaway channels
+    const mag = Math.hypot(fx, fy);
+    if (mag > maxMag && mag > 0) {
+      const scale = maxMag / mag;
+      this.flowX[idx] = fx * scale;
+      this.flowY[idx] = fy * scale;
+    } else {
+      this.flowX[idx] = fx;
+      this.flowY[idx] = fy;
     }
   }
 }
