@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5173"
+    "preview": "vite preview --port 5173",
+    "copy": "cp -r dist/* /srv/www/nostalgiabite.games/slimes/",
+    "deploy": "npm run build && npm run copy"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
