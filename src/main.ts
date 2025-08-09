@@ -88,41 +88,28 @@ const params: SimParams = {
 
 const agents = new AgentSystem(field, params);
 
-function randomHorizontalBarriers() {
-  field.clearWalls();
-  const bars = Math.floor(Math.random() * 5) + 3; // 3..7
-  for (let i = 0; i < bars; i++) {
-    const y = Math.floor(Math.random() * field.height);
-    const thickness = Math.floor(Math.random() * 3) + 1;
-    for (let yy = Math.max(0, y - thickness); yy < Math.min(field.height, y + thickness); yy++) {
-      for (let x = 0; x < field.width; x++) {
-        field.walls[yy * field.width + x] = 1;
-      }
-    }
-  }
-}
+ // Removed random horizontal barriers generation
 
-function resetScene(keepWalls: boolean) {
-  if (!keepWalls) randomHorizontalBarriers();
-  else field.values.fill(0);
-  field.initializeCosineGradient();
-  agents.reseedAgents();
-}
+ function resetScene(keepWalls: boolean) {
+   if (!keepWalls) field.clearWalls();
+   else field.clearValues();
+   field.initializeCosineGradient();
+   agents.reseedAgents();
+ }
 
-function reseedAll() {
-  randomHorizontalBarriers();
-  field.clearValues();
-  field.initializeCosineGradient();
-  agents.reseedAgents();
-}
+ function reseedAll() {
+   field.clearWalls();
+   field.clearValues();
+   field.initializeCosineGradient();
+   agents.reseedAgents();
+ }
 
 resetBtn.addEventListener('click', () => resetScene(true));
 reseedBtn.addEventListener('click', () => reseedAll());
 
-// Initial state
-randomHorizontalBarriers();
-field.initializeCosineGradient();
-agents.reseedAgents();
+ // Initial state without random walls
+ field.initializeCosineGradient();
+ agents.reseedAgents();
 
 // Input drawing
 function canvasToFieldCoords(ev: MouseEvent) {
