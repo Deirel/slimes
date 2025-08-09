@@ -9,17 +9,25 @@ const PALETTE = {
   bg: { r: 10, g: 14, b: 19 }, // #0a0e13
   wall: { r: 28, g: 35, b: 44 }, // #1c232c
   warmStart: [255, 136, 64] as [number, number, number], // #ff8840
-  warmEnd:   [255, 234, 170] as [number, number, number], // #ffeaAA
+  warmEnd:   [250, 210, 120] as [number, number, number], // toned-down butter
   coolStart: [32, 92, 148] as [number, number, number], // #205c94
-  coolEnd:   [96, 224, 208] as [number, number, number], // #60e0d0
-  agentBase:    [245, 90, 230] as [number, number, number], // #f55ae6
+  coolEnd:   [84, 210, 190] as [number, number, number], // toned-down aqua
+  agentBase:    [240, 80, 220] as [number, number, number], // slightly dimmer
   agentTwinkle: [20, 40, 20] as [number, number, number],
-  agentSparkle: [255, 160, 245] as [number, number, number], // #ffa0f5
+  agentSparkle: [230, 140, 225] as [number, number, number], // softer spark
 } as const;
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
+
+// Visual tuning knobs for contrast/brightness
+const COLOR_MAP = {
+  maxAbsValue: 2.5,
+  gamma: 1.35,         // >1 darkens mid-tones, emphasizes peaks
+  bgMixMin: 0.1,       // mix to bg at high intensity (s≈1)
+  bgMixMax: 0.65,      // mix to bg at low intensity (s≈0)
+} as const;
 
 export class Renderer {
   buffer: HTMLCanvasElement;
@@ -47,7 +55,7 @@ export class Renderer {
       this.imageData = this.bctx.createImageData(w, h);
     }
     const data = this.imageData.data;
-    const gamma = 0.9;
+    const gamma = COLOR_MAP.gamma;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const i = indexOf(x, y, w);
@@ -55,17 +63,25 @@ export class Renderer {
         let r = PALETTE.bg.r, g = PALETTE.bg.g, b = PALETTE.bg.b;
         // Map value to two-pole palette with dark zero using gamma-corrected lerp
         if (v > 0) {
-          const t = Math.min(1, v / 2.5);
+          const t = Math.min(1, v / COLOR_MAP.maxAbsValue);
           const s = gammaCorrect(t, gamma);
-          r = Math.round(lerp(PALETTE.warmStart[0], PALETTE.warmEnd[0], s));
-          g = Math.round(lerp(PALETTE.warmStart[1], PALETTE.warmEnd[1], s));
-          b = Math.round(lerp(PALETTE.warmStart[2], PALETTE.warmEnd[2], s));
+          let rr = Math.round(lerp(PALETTE.warmStart[0], PALETTE.warmEnd[0], s));
+          let gg = Math.round(lerp(PALETTE.warmStart[1], PALETTE.warmEnd[1], s));
+          let bb = Math.round(lerp(PALETTE.warmStart[2], PALETTE.warmEnd[2], s));
+          const mix = lerp(COLOR_MAP.bgMixMin, COLOR_MAP.bgMixMax, 1 - s);
+          r = Math.round(lerp(rr, PALETTE.bg.r, mix));
+          g = Math.round(lerp(gg, PALETTE.bg.g, mix));
+          b = Math.round(lerp(bb, PALETTE.bg.b, mix));
         } else if (v < 0) {
-          const t = Math.min(1, (-v) / 2.5);
+          const t = Math.min(1, (-v) / COLOR_MAP.maxAbsValue);
           const s = gammaCorrect(t, gamma);
-          r = Math.round(lerp(PALETTE.coolStart[0], PALETTE.coolEnd[0], s));
-          g = Math.round(lerp(PALETTE.coolStart[1], PALETTE.coolEnd[1], s));
-          b = Math.round(lerp(PALETTE.coolStart[2], PALETTE.coolEnd[2], s));
+          let rr = Math.round(lerp(PALETTE.coolStart[0], PALETTE.coolEnd[0], s));
+          let gg = Math.round(lerp(PALETTE.coolStart[1], PALETTE.coolEnd[1], s));
+          let bb = Math.round(lerp(PALETTE.coolStart[2], PALETTE.coolEnd[2], s));
+          const mix = lerp(COLOR_MAP.bgMixMin, COLOR_MAP.bgMixMax, 1 - s);
+          r = Math.round(lerp(rr, PALETTE.bg.r, mix));
+          g = Math.round(lerp(gg, PALETTE.bg.g, mix));
+          b = Math.round(lerp(bb, PALETTE.bg.b, mix));
         }
         // Walls: consistent dark tone for clear separation
         if (field.walls[i] === 1) {
@@ -93,10 +109,12 @@ export class Renderer {
         const seed = (((x * 73856093) ^ (y * 19349663)) >>> 0) % 6283;
         const phase = seed / 1000;
         const twinkle = 0.6 + 0.4 * Math.sin(t + phase);
-        // Mix agent base toward white by twinkle for pop
-        const ar = Math.min(255, Math.round(lerp(PALETTE.agentBase[0], 255, 0.2 + 0.8 * twinkle)));
-        const ag = Math.min(255, Math.round(lerp(PALETTE.agentBase[1], 255, 0.2 + 0.8 * twinkle)));
-        const ab = Math.min(255, Math.round(lerp(PALETTE.agentBase[2], 255, 0.2 + 0.8 * twinkle)));
+        // Mix agent base slightly toward off-white for contrast without washout
+        const whiten = 0.08 + 0.52 * twinkle;
+        const whiteTarget = 240;
+        const ar = Math.min(240, Math.round(lerp(PALETTE.agentBase[0], whiteTarget, whiten)));
+        const ag = Math.min(240, Math.round(lerp(PALETTE.agentBase[1], whiteTarget, whiten)));
+        const ab = Math.min(240, Math.round(lerp(PALETTE.agentBase[2], whiteTarget, whiten)));
         // lighten blend: take max to ensure visibility over background
         if (ar > data32[i]) data32[i] = ar;
         if (ag > data32[i + 1]) data32[i + 1] = ag;
