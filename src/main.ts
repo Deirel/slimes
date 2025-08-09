@@ -93,22 +93,24 @@ const agents = new AgentSystem(field, params);
  function resetScene(keepWalls: boolean) {
    if (!keepWalls) field.clearWalls();
    else field.clearValues();
-   field.initializeCosineGradient();
+   // Start from a neutral field to avoid washed background
+   field.clearValues();
    agents.reseedAgents();
  }
 
  function reseedAll() {
    field.clearWalls();
    field.clearValues();
-   field.initializeCosineGradient();
+   // Neutral field for clarity
+   field.clearValues();
    agents.reseedAgents();
  }
 
 resetBtn.addEventListener('click', () => resetScene(true));
 reseedBtn.addEventListener('click', () => reseedAll());
 
- // Initial state without random walls
- field.initializeCosineGradient();
+ // Initial state: neutral field (dark), no random walls
+ field.clearValues();
  agents.reseedAgents();
 
 // Input drawing
@@ -189,7 +191,7 @@ function frame(now: number) {
 
   // render field to image at field resolution then draw scaled
   renderer.resize(field.width, field.height);
-  renderer.renderField(field);
+  renderer.renderField(field, agents.agents, now);
 
   // upscale to full view
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
