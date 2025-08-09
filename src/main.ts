@@ -163,6 +163,7 @@ const goals = new GoalPlanner();
 
 type Pulse = { x: number; y: number; age: number; duration: number; startR: number; endR: number };
 const pulses: Pulse[] = [];
+let dashPhase = 0; // for marching-ants indication
 
 function resizeCanvasToViewport() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -230,6 +231,28 @@ function drawPulses(ctx: CanvasRenderingContext2D, dt: number) {
   ctx.restore();
 }
 
+function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay) {
+  if (dt <= 0) return;
+  dashPhase = (dashPhase + dt * 60) % 20; // animate dashes
+  ctx.save();
+  ctx.setLineDash([3, 3]);
+  ctx.lineDashOffset = dashPhase;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(220,250,255,0.9)';
+  for (const c of overlay.circles) {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  for (const l of overlay.lines) {
+    ctx.beginPath();
+    ctx.moveTo(l.x1, l.y1);
+    ctx.lineTo(l.x2, l.y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function frame(now: number) {
   const dtRaw = (now - lastTime) / 1000;
   lastTime = now;
@@ -272,6 +295,9 @@ function frame(now: number) {
   const dtForGoals = paused ? 0 : dt;
   const result: UpdateResult = goals.update(nowSec, dtForGoals, field);
   drawOverlay(ctx, result.overlay, result.progressRatio);
+  if (result.progressing) {
+    drawProgressingStyle(ctx, paused ? 0 : dt, result.overlay);
+  }
   if (result.completed && result.successTargets) {
     for (const t of result.successTargets) {
       pulses.push({ x: t.x, y: t.y, age: 0, duration: 0.8, startR: 4, endR: 22 });

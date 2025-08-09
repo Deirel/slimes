@@ -113,7 +113,7 @@ export class GoalPlanner {
     return g;
   }
 
-  private checkConnectProgress(field: Field, g: MicroGoal, dt: number): boolean {
+  private checkConnectProgress(field: Field, g: MicroGoal, dt: number): { done: boolean; progressing: boolean } {
     const a = g.a!; const b = g.b!;
     const pts = lineSamples(a, b, 5);
     let sumProj = 0; let count = 0;
@@ -132,10 +132,10 @@ export class GoalPlanner {
     const avg = count ? sumProj / count : 0;
     const ok = avg > 0.12; // requires latent flow aligned with corridor
     if (ok) g.progressSec += dt; else g.progressSec = Math.max(0, g.progressSec - dt * 0.5);
-    return g.progressSec >= g.requiredSec;
+    return { done: g.progressSec >= g.requiredSec, progressing: ok };
   }
 
-  private checkSilenceProgress(field: Field, g: MicroGoal, dt: number): boolean {
+  private checkSilenceProgress(field: Field, g: MicroGoal, dt: number): { done: boolean; progressing: boolean } {
     const c = g.center!; const r = g.radius!;
     const r2 = r * r;
     const x0 = Math.max(0, Math.floor(c.x - r));
@@ -157,7 +157,7 @@ export class GoalPlanner {
     const avgAbs = count ? sumAbs / count : 1;
     const ok = avgAbs < 0.05; // quiet area
     if (ok) g.progressSec += dt; else g.progressSec = Math.max(0, g.progressSec - dt * 0.5);
-    return g.progressSec >= g.requiredSec;
+    return { done: g.progressSec >= g.requiredSec, progressing: ok };
   }
 
   update(nowSec: number, dt: number, field: Field): UpdateResult {
@@ -183,8 +183,14 @@ export class GoalPlanner {
 
     // Check completion
     let done = false;
-    if (g.type === 'connect_nodes') done = this.checkConnectProgress(field, g, dt);
-    else done = this.checkSilenceProgress(field, g, dt);
+    let progressing = false;
+    if (g.type === 'connect_nodes') {
+      const r = this.checkConnectProgress(field, g, dt);
+      done = r.done; progressing = r.progressing;
+    } else {
+      const r = this.checkSilenceProgress(field, g, dt);
+      done = r.done; progressing = r.progressing;
+    }
 
     let successTargets: Vec2[] | undefined;
     if (done) {
@@ -194,6 +200,6 @@ export class GoalPlanner {
       this.current = undefined;
     }
     const progressRatio = Math.max(0, Math.min(1, g.progressSec / g.requiredSec));
-    return { overlay, completed: done, expired: expiredEvent, successTargets, progressRatio };
+    return { overlay, completed: done, expired: expiredEvent, successTargets, progressRatio, progressing };
   }
 }
