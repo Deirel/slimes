@@ -164,6 +164,7 @@ const goals = new GoalPlanner();
 type Pulse = { x: number; y: number; age: number; duration: number; startR: number; endR: number };
 const pulses: Pulse[] = [];
 let dashPhase = 0; // for marching-ants indication
+let arrowPhase = 0; // for flowing direction chevrons
 
 function resizeCanvasToViewport() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -253,6 +254,37 @@ function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay
   ctx.restore();
 }
 
+function drawDirectionHints(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay, progressRatio: number) {
+  // Always show subtle direction on lines (connect_nodes), brighter with progress
+  if (dt > 0) arrowPhase = (arrowPhase + dt * 40) % 1000;
+  ctx.save();
+  for (const l of overlay.lines) {
+    const vx = l.x2 - l.x1;
+    const vy = l.y2 - l.y1;
+    const len = Math.hypot(vx, vy) || 1;
+    const nx = vx / len; const ny = vy / len;
+    const spacing = 12; // px along field
+    const size = 2.5;   // chevron size in px
+    const baseAlpha = 0.28;
+    const a = Math.max(0, Math.min(1, (baseAlpha + 0.55 * progressRatio)));
+    const offset = (arrowPhase % spacing);
+    for (let d = offset; d < len; d += spacing) {
+      const px = l.x1 + nx * d;
+      const py = l.y1 + ny * d;
+      // Build a tiny triangle pointing along (nx, ny)
+      const tx = -ny; const ty = nx; // perpendicular
+      ctx.beginPath();
+      ctx.moveTo(px + nx * size, py + ny * size);
+      ctx.lineTo(px - nx * size + tx * size * 0.7, py - ny * size + ty * size * 0.7);
+      ctx.lineTo(px - nx * size - tx * size * 0.7, py - ny * size - ty * size * 0.7);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(200,235,255,${a})`;
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function frame(now: number) {
   const dtRaw = (now - lastTime) / 1000;
   lastTime = now;
@@ -295,6 +327,8 @@ function frame(now: number) {
   const dtForGoals = paused ? 0 : dt;
   const result: UpdateResult = goals.update(nowSec, dtForGoals, field);
   drawOverlay(ctx, result.overlay, result.progressRatio);
+  // Direction chevrons along connect_nodes line — help discover required flow direction
+  drawDirectionHints(ctx, paused ? 0 : dt, result.overlay, result.progressRatio);
   if (result.progressing) {
     drawProgressingStyle(ctx, paused ? 0 : dt, result.overlay);
   }
