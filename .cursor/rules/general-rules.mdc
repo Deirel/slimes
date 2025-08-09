@@ -1,0 +1,11 @@
+---
+description: General Rules
+globs:
+alwaysApply: true
+---
+
+# General Rules
+
+## Dev Stack
+
+@DEV-STACK.md
