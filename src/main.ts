@@ -85,9 +85,9 @@ const params: SimParams = {
   fieldMin: -2.5,
   fieldMax: 2.5,
   // Iteration 01: hidden memory layer tuning
-  memoryInfluence: 0.25,
-  memoryDepositFactor: 0.35,
-  memoryDecayPerSecond: 0.03,
+  memoryInfluence: 0.2,
+  memoryDepositFactor: 0.25,
+  memoryDecayPerSecond: 0.08,
 };
 
 const agents = new AgentSystem(field, params);
