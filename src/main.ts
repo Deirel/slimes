@@ -183,6 +183,7 @@ resizeCanvasToViewport();
 
 let lastTime = performance.now();
 let acc = 0;
+let simTimeSec = 0; // advances only when not paused (used by goals)
 
 function drifted(paramBase: number, amp: number, period: number, t: number): number {
   return paramBase + amp * Math.sin((2 * Math.PI * t) / period);
@@ -234,6 +235,7 @@ function frame(now: number) {
   lastTime = now;
   const dt = Math.min(0.05, dtRaw) * tempo;
   if (!paused) {
+    simTimeSec += dt;
     // do two substeps for stability
     const subDt = dt / 2;
 
@@ -266,15 +268,16 @@ function frame(now: number) {
   ctx.drawImage((renderer as any).buffer, 0, 0);
 
   // Iteration 03: micro-goals planner and subtle hints overlay
-  const nowSec = now / 1000;
-  const result: UpdateResult = goals.update(nowSec, dt, field);
+  const nowSec = simTimeSec;
+  const dtForGoals = paused ? 0 : dt;
+  const result: UpdateResult = goals.update(nowSec, dtForGoals, field);
   drawOverlay(ctx, result.overlay, result.progressRatio);
   if (result.completed && result.successTargets) {
     for (const t of result.successTargets) {
       pulses.push({ x: t.x, y: t.y, age: 0, duration: 0.8, startR: 4, endR: 22 });
     }
   }
-  drawPulses(ctx, dt);
+  drawPulses(ctx, paused ? 0 : dt);
 
   ctx.restore();
 
