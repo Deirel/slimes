@@ -12,9 +12,9 @@ const PALETTE = {
   warmEnd:   [250, 210, 120] as [number, number, number], // toned-down butter
   coolStart: [32, 92, 148] as [number, number, number], // #205c94
   coolEnd:   [84, 210, 190] as [number, number, number], // toned-down aqua
-  agentBase:    [240, 80, 220] as [number, number, number], // slightly dimmer
+  agentBase:    [90, 210, 255] as [number, number, number], // icy cyan agent
   agentTwinkle: [20, 40, 20] as [number, number, number],
-  agentSparkle: [230, 140, 225] as [number, number, number], // softer spark
+  agentSparkle: [200, 240, 255] as [number, number, number], // cool white-cyan spark
 } as const;
 
 function lerp(a: number, b: number, t: number): number {
