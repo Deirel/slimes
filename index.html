@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Слизевик-поля</title>
     <style>
-      html, body, #app { height:100%; margin:0; background:#0b0f14; color:#cfd8e3; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-      #hud { position: fixed; left: 10px; bottom: 10px; font-size: 12px; line-height: 1.35; background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 6px; backdrop-filter: blur(4px); }
-      #toolbar { position: fixed; right: 10px; bottom: 10px; display: flex; gap: 6px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; }
+      html, body, #app { height:100%; margin:0; background:#0a0e13; color:#d8e6ee; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+      #hud { position: fixed; left: 10px; bottom: 10px; font-size: 12px; line-height: 1.35; background: rgba(10,14,19,0.6); padding: 8px 10px; border-radius: 6px; backdrop-filter: blur(4px); }
+      #toolbar { position: fixed; right: 10px; bottom: 10px; display: flex; gap: 6px; background: rgba(10,14,19,0.6); padding: 8px; border-radius: 6px; }
       #toolbar button, #toolbar input[type="range"] { cursor: pointer; }
-      #toolbar button { background: #16202a; color:#cfd8e3; border:1px solid #253140; border-radius: 6px; padding: 6px 8px; }
-      #toolbar button.active { background:#2a3a4a; }
+      #toolbar button { background: #15222c; color:#d8e6ee; border:1px solid #243544; border-radius: 6px; padding: 6px 8px; }
+      #toolbar button:hover { background:#1a2a35; }
+      #toolbar button.active { background:#1e3746; }
       canvas { display:block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
   </head>
