@@ -22,6 +22,13 @@ export interface MicroGoal {
 export interface OverlayCircle { x: number; y: number; r: number; alpha: number; }
 export interface OverlayLine { x1: number; y1: number; x2: number; y2: number; alpha: number; }
 export interface RenderOverlay { circles: OverlayCircle[]; lines: OverlayLine[]; }
+export interface UpdateResult {
+  overlay: RenderOverlay;
+  completed: boolean;
+  expired: boolean;
+  successTargets?: Vec2[]; // present only on the frame of completion
+  progressRatio: number;   // 0..1, for subtle visual emphasis
+}
 
 import { Field } from './field';
 
@@ -153,8 +160,10 @@ export class GoalPlanner {
     return g.progressSec >= g.requiredSec;
   }
 
-  update(nowSec: number, dt: number, field: Field): { overlay: RenderOverlay; completed: boolean } {
+  update(nowSec: number, dt: number, field: Field): UpdateResult {
+    let expiredEvent = false;
     if (!this.current || nowSec > this.current.expiresAt) {
+      expiredEvent = !!this.current;
       this.pickNew(nowSec, field);
     }
     const g = this.current!;
@@ -177,10 +186,14 @@ export class GoalPlanner {
     if (g.type === 'connect_nodes') done = this.checkConnectProgress(field, g, dt);
     else done = this.checkSilenceProgress(field, g, dt);
 
+    let successTargets: Vec2[] | undefined;
     if (done) {
+      if (g.type === 'connect_nodes' && g.a && g.b) successTargets = [g.a, g.b];
+      else if (g.type === 'silence_area' && g.center) successTargets = [g.center];
       // Start a new goal next frame
       this.current = undefined;
     }
-    return { overlay, completed: done };
+    const progressRatio = Math.max(0, Math.min(1, g.progressSec / g.requiredSec));
+    return { overlay, completed: done, expired: expiredEvent, successTargets, progressRatio };
   }
 }

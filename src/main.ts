@@ -2,7 +2,7 @@ import { Field } from './field';
 import { AgentSystem } from './agents';
 import { HUD } from './hud';
 import type { Tool, SimParams } from './types';
-import { GoalPlanner, type RenderOverlay } from './goals';
+import { GoalPlanner, type RenderOverlay, type UpdateResult } from './goals';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 const hudEl = document.getElementById('hud') as HTMLElement;
@@ -161,6 +161,9 @@ import { Renderer } from './render';
 const renderer = new Renderer();
 const goals = new GoalPlanner();
 
+type Pulse = { x: number; y: number; age: number; duration: number; startR: number; endR: number };
+const pulses: Pulse[] = [];
+
 function resizeCanvasToViewport() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
   canvas.width = Math.floor(window.innerWidth * dpr);
@@ -186,22 +189,42 @@ function drifted(paramBase: number, amp: number, period: number, t: number): num
 }
 
 // Main loop
-function drawOverlay(ctx: CanvasRenderingContext2D, overlay: RenderOverlay) {
+function drawOverlay(ctx: CanvasRenderingContext2D, overlay: RenderOverlay, progressRatio: number) {
   // Draw in field pixel space (caller ensures scaling)
   ctx.save();
   ctx.lineWidth = 1;
   for (const c of overlay.circles) {
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(180,220,255,${Math.max(0, Math.min(1, c.alpha * 0.55))})`;
+    const a = Math.max(0, Math.min(1, c.alpha * (0.35 + 0.65 * progressRatio)));
+    ctx.strokeStyle = `rgba(180,220,255,${a})`;
     ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
     ctx.stroke();
   }
   for (const l of overlay.lines) {
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(180,220,255,${Math.max(0, Math.min(1, l.alpha * 0.55))})`;
+    const a = Math.max(0, Math.min(1, l.alpha * (0.35 + 0.65 * progressRatio)));
+    ctx.strokeStyle = `rgba(180,220,255,${a})`;
     ctx.moveTo(l.x1, l.y1);
     ctx.lineTo(l.x2, l.y2);
     ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawPulses(ctx: CanvasRenderingContext2D, dt: number) {
+  ctx.save();
+  for (let i = pulses.length - 1; i >= 0; i--) {
+    const p = pulses[i];
+    p.age += dt;
+    const t = Math.max(0, Math.min(1, p.age / p.duration));
+    const r = p.startR + (p.endR - p.startR) * t;
+    const alpha = (1 - t) * 0.9;
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(210,240,255,${alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    if (p.age >= p.duration) pulses.splice(i, 1);
   }
   ctx.restore();
 }
@@ -244,8 +267,14 @@ function frame(now: number) {
 
   // Iteration 03: micro-goals planner and subtle hints overlay
   const nowSec = now / 1000;
-  const { overlay } = goals.update(nowSec, dt, field);
-  drawOverlay(ctx, overlay);
+  const result: UpdateResult = goals.update(nowSec, dt, field);
+  drawOverlay(ctx, result.overlay, result.progressRatio);
+  if (result.completed && result.successTargets) {
+    for (const t of result.successTargets) {
+      pulses.push({ x: t.x, y: t.y, age: 0, duration: 0.8, startR: 4, endR: 22 });
+    }
+  }
+  drawPulses(ctx, dt);
 
   ctx.restore();
 
