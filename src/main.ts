@@ -143,11 +143,11 @@ canvas.addEventListener('mousemove', (e) => {
 
 function handleTool(e: MouseEvent) {
   const { x, y } = canvasToFieldCoords(e);
-  if (tool === 'attract') field.addCircle(x, y, 13, +0.9);
+  if (tool === 'attract') field.addCircle(x, y, 8, +0.9);
   else if (tool === 'repel') {
-    field.addCircle(x, y, 13, -0.9);
+    field.addCircle(x, y, 8, -0.9);
     // Leave a short-lived negative memory to keep agents from immediately overwriting the path
-    field.addMemoryCircle(x, y, 11, -0.6);
+    field.addMemoryCircle(x, y, 8, -0.6);
   }
   else if (tool === 'wall') field.drawWallCircle(x, y, 8);
   else if (tool === 'erase') {
