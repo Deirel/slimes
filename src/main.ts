@@ -2,6 +2,7 @@ import { Field } from './field';
 import { AgentSystem } from './agents';
 import { HUD } from './hud';
 import type { Tool, SimParams } from './types';
+import { GoalPlanner, type RenderOverlay } from './goals';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 const hudEl = document.getElementById('hud') as HTMLElement;
@@ -158,6 +159,7 @@ function handleTool(e: MouseEvent) {
 // Rendering setup
 import { Renderer } from './render';
 const renderer = new Renderer();
+const goals = new GoalPlanner();
 
 function resizeCanvasToViewport() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -184,6 +186,26 @@ function drifted(paramBase: number, amp: number, period: number, t: number): num
 }
 
 // Main loop
+function drawOverlay(ctx: CanvasRenderingContext2D, overlay: RenderOverlay) {
+  // Draw in field pixel space (caller ensures scaling)
+  ctx.save();
+  ctx.lineWidth = 1;
+  for (const c of overlay.circles) {
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(180,220,255,${Math.max(0, Math.min(1, c.alpha * 0.55))})`;
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  for (const l of overlay.lines) {
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(180,220,255,${Math.max(0, Math.min(1, l.alpha * 0.55))})`;
+    ctx.moveTo(l.x1, l.y1);
+    ctx.lineTo(l.x2, l.y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function frame(now: number) {
   const dtRaw = (now - lastTime) / 1000;
   lastTime = now;
@@ -219,6 +241,12 @@ function frame(now: number) {
   ctx.save();
   ctx.scale(scaleX, scaleY);
   ctx.drawImage((renderer as any).buffer, 0, 0);
+
+  // Iteration 03: micro-goals planner and subtle hints overlay
+  const nowSec = now / 1000;
+  const { overlay } = goals.update(nowSec, dt, field);
+  drawOverlay(ctx, overlay);
+
   ctx.restore();
 
   hud.update(now, field, agents, toolName(tool));
