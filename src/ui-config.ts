@@ -1,3 +1,21 @@
+interface ButtonConfig {
+  icon: string;
+  title: string;
+  hotkey?: string;
+  action?: 'toggle' | 'trigger';
+  id?: string;
+}
+
+interface ControlConfig {
+  type: 'slider';
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+  id: string;
+}
+
 export const UI_CONFIG = {
   tools: {
     attract: { 
@@ -30,6 +48,40 @@ export const UI_CONFIG = {
     }
   },
   
+  buttons: {
+    pause: { 
+      icon: '⏸️', 
+      title: 'Пауза', 
+      hotkey: 'p', 
+      action: 'toggle' as const, 
+      id: 'btn-pause' 
+    },
+    reset: { 
+      icon: '🔄', 
+      title: 'Сброс сцены', 
+      action: 'trigger' as const, 
+      id: 'btn-reset' 
+    },
+    reseed: { 
+      icon: '🎲', 
+      title: 'Новые семена', 
+      action: 'trigger' as const, 
+      id: 'btn-reseed' 
+    }
+  },
+  
+  controls: {
+    tempo: { 
+      type: 'slider' as const, 
+      label: 'Темп', 
+      min: 0.2,
+      max: 3,
+      step: 0.1,
+      default: 1,
+      id: 'tempo' 
+    }
+  },
+  
   animation: {
     pulsesDuration: 0.8,
     pulseStartRadius: 4,
@@ -58,13 +110,6 @@ export const UI_CONFIG = {
   
   hud: {
     fpsUpdateInterval: 10 // frames
-  },
-  
-  tempo: {
-    min: 0.2,
-    max: 3,
-    step: 0.1,
-    default: 1
   }
 } as const;
 

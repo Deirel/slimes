@@ -6,25 +6,19 @@ import { GoalPlanner, type UpdateResult } from './goals';
 import { UI_CONFIG, ToolType } from './ui-config';
 import { InputHandler } from './input-handler';
 import { UIController } from './ui-controller';
+import { UIBuilder } from './ui-builder';
 import { VisualEffects } from './visual-effects';
 
 const canvas = document.getElementById('view') as HTMLCanvasElement;
 const hudEl = document.getElementById('hud') as HTMLElement;
 const hud = new HUD(hudEl);
 
-// UI Controller setup
-const uiController = new UIController({
-  toolButtons: {
-    attract: document.getElementById('tool-attract') as HTMLButtonElement,
-    repel: document.getElementById('tool-repel') as HTMLButtonElement,
-    wall: document.getElementById('tool-wall') as HTMLButtonElement,
-    erase: document.getElementById('tool-erase') as HTMLButtonElement,
-  },
-  pauseBtn: document.getElementById('btn-pause') as HTMLButtonElement,
-  resetBtn: document.getElementById('btn-reset') as HTMLButtonElement,
-  reseedBtn: document.getElementById('btn-reseed') as HTMLButtonElement,
-  tempoInput: document.getElementById('tempo') as HTMLInputElement
-});
+// Динамическое создание UI
+const uiBuilder = new UIBuilder('toolbar');
+const uiElements = uiBuilder.buildFromConfig(UI_CONFIG);
+
+// UIController теперь получает сгенерированные элементы
+const uiController = new UIController(uiElements);
 
 let field = new Field(320, 180);
 

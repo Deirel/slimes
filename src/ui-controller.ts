@@ -1,4 +1,5 @@
 import { UI_CONFIG, ToolType } from './ui-config';
+import type { UIElements } from './ui-builder';
 
 export interface UIState {
   tool: ToolType;
@@ -10,7 +11,7 @@ export class UIController {
   private state: UIState = {
     tool: 'attract',
     paused: false,
-    tempo: UI_CONFIG.tempo.default
+    tempo: UI_CONFIG.controls.tempo.default
   };
   
   private listeners = {
@@ -19,15 +20,24 @@ export class UIController {
     tempoChange: [] as ((tempo: number) => void)[]
   };
   
-  constructor(
-    private elements: {
-      toolButtons: Record<ToolType, HTMLButtonElement>;
-      pauseBtn: HTMLButtonElement;
-      resetBtn: HTMLButtonElement;
-      reseedBtn: HTMLButtonElement;
-      tempoInput: HTMLInputElement;
-    }
-  ) {
+  private elements: {
+    toolButtons: Record<ToolType, HTMLButtonElement>;
+    pauseBtn: HTMLButtonElement;
+    resetBtn: HTMLButtonElement;
+    reseedBtn: HTMLButtonElement;
+    tempoInput: HTMLInputElement;
+  };
+
+  constructor(uiElements: UIElements) {
+    // Адаптация для работы с новой структурой
+    this.elements = {
+      toolButtons: uiElements.toolButtons,
+      pauseBtn: uiElements.actionButtons.pause,
+      resetBtn: uiElements.actionButtons.reset,
+      reseedBtn: uiElements.actionButtons.reseed,
+      tempoInput: uiElements.controls.tempo
+    };
+    
     this.initEventListeners();
     this.updateUI();
   }
