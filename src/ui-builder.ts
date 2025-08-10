@@ -20,6 +20,7 @@ export class UIBuilder {
   }
 
   render(config: UIConfigV2, openPath: string[]): UIElementsV2 {
+    // Rebuild rows fully for simplicity; animations handled outside
     this.container.innerHTML = '';
     const controlRefs: Record<string, HTMLElement> = {};
 

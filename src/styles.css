@@ -39,6 +39,7 @@
   /* Эффекты */
   --backdrop-blur: blur(4px);
   --transition-speed: 0.2s;
+  --row-anim-duration: 160ms;
   
   /* Шрифты */
   --font-stack: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
@@ -101,9 +102,24 @@ canvas {
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  will-change: transform, opacity;
 }
 .ui-row::-webkit-scrollbar { height: 8px; }
 .ui-row::-webkit-scrollbar-thumb { background: #22313d; border-radius: 8px; }
+
+/* Row enter/exit animations */
+@keyframes ui-row-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ui-row-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+.ui-row.enter { animation: ui-row-enter var(--row-anim-duration) ease-out; }
+.ui-row.exit { animation: ui-row-exit var(--row-anim-duration) ease-in forwards; pointer-events: none; }
+
+/* Exiting clones are appended to #app with position:fixed; no container styles needed */
 .ui-btn {
   background: var(--color-button-bg);
   color: var(--color-text);

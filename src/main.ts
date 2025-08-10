@@ -18,6 +18,7 @@ const hud = new HUD(hudEl);
 const uiBuilder = new UIBuilder('ui-rows');
 let uiElements = uiBuilder.render(UI_CONFIG, []);
 const uiController = new UIController(uiElements);
+let lastOpenPath: string[] = [];
 
 // Debug: scroll/viewport diagnostics
 function attachRowEventDebugging(rows: HTMLElement[]) {
@@ -135,8 +136,46 @@ function logScrollDiagnostics(context: string) {
 }
 
 uiController.on('openPathChange', (openPath) => {
+  const container = document.getElementById('ui-rows') as HTMLElement;
+  const existingRows = Array.from(container?.children || []) as HTMLElement[];
+  const oldCount = existingRows.length; // should be lastOpenPath.length + 1
+  const newCount = (openPath?.length || 0) + 1;
+
+  // Animate exit for rows that are going away (clone at fixed screen position)
+  if (oldCount > newCount && existingRows.length) {
+    const toRemove = existingRows.slice(newCount); // tail rows beyond new depth
+    toRemove.forEach((row) => {
+      const rect = row.getBoundingClientRect();
+      const clone = row.cloneNode(true) as HTMLElement;
+      clone.classList.add('exit');
+      // Fix the clone at the exact screen position to avoid jumping
+      clone.style.position = 'fixed';
+      clone.style.left = `${Math.round(rect.left)}px`;
+      clone.style.top = `${Math.round(rect.top)}px`;
+      clone.style.width = `${Math.round(rect.width)}px`;
+      clone.style.height = `${Math.round(rect.height)}px`;
+      clone.style.margin = '0';
+      clone.style.pointerEvents = 'none';
+      (document.getElementById('app') || document.body).appendChild(clone);
+      clone.addEventListener('animationend', () => clone.remove(), { once: true });
+    });
+  }
+
+  // Render new state
   uiElements = uiBuilder.render(UI_CONFIG, openPath);
   uiController.setElements(uiElements);
+
+  // Animate enter for rows that are newly added
+  if (newCount > oldCount) {
+    const rowsNow = Array.from(document.querySelectorAll('#ui-rows .ui-row')) as HTMLElement[];
+    const added = rowsNow.slice(-Math.max(0, newCount - oldCount));
+    added.forEach((row) => {
+      row.classList.add('enter');
+      row.addEventListener('animationend', () => row.classList.remove('enter'), { once: true });
+    });
+  }
+
+  lastOpenPath = openPath.slice();
   attachRowEventDebugging(Array.from(document.querySelectorAll('.ui-row')) as HTMLElement[]);
   logScrollDiagnostics('after openPathChange render');
 });
