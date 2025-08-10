@@ -58,8 +58,13 @@ let field = new Field(320, 180);
 
 function chooseAdaptiveResolution() {
   const cellSize = 5; // пикселей на клетку (сохраняем текущий размер клеток)
+  
+  // Вычесть высоту панели управления на мобильных
+  const isMobile = window.innerWidth <= 768 || window.innerHeight <= 600;
+  const toolbarHeight = isMobile ? 60 : 0;
+  
   const w = Math.round(window.innerWidth / cellSize);  
-  const h = Math.round(window.innerHeight / cellSize);
+  const h = Math.round((window.innerHeight - toolbarHeight) / cellSize);
   
   // Только минимальные ограничения для игрового процесса
   const minW = 60;  // минимум для интерфейса

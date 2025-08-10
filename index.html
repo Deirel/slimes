@@ -95,34 +95,56 @@
       
       canvas { display:block; width: 100vw; height: 100vh; image-rendering: pixelated; }
       
+      /* Adjust canvas for mobile toolbar */
+      @media screen and (max-width: 768px), (max-height: 600px) {
+        canvas { height: calc(100vh - 60px); }
+      }
+      
       /* Mobile/Portrait orientation */
       @media screen and (max-width: 768px), (max-height: 600px) {
         #toolbar {
-          right: auto;
-          bottom: 10px;
-          left: 50%;
-          transform: translateX(-50%);
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          display: flex;
           flex-direction: row;
-          flex-wrap: wrap;
-          justify-content: center;
-          max-width: calc(100vw - 20px);
-          padding: 10px;
+          justify-content: space-evenly;
+          align-items: center;
+          padding: 8px;
+          gap: 4px;
+          max-width: none;
+          transform: none;
+          border-radius: 0;
         }
         
         #toolbar button {
-          padding: 10px 12px;
-          font-size: 12px;
-          flex: 0 0 auto;
+          width: 44px;
+          height: 44px;
+          padding: 0;
+          font-size: 18px;
+          flex: 0 0 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         
         #toolbar label {
-          flex: 1 1 100%;
-          justify-content: center;
-          margin-top: 8px;
+          flex: 0 0 auto;
+          flex-direction: column;
+          gap: 2px;
+          font-size: 10px;
+          margin: 0;
+        }
+        
+        #toolbar label span {
+          text-align: center;
         }
         
         #toolbar input[type="range"] {
-          width: 100px;
+          width: 60px;
+          height: 20px;
         }
         
         #hud {
@@ -136,14 +158,19 @@
       /* Very small screens */
       @media screen and (max-width: 480px) {
         #toolbar {
-          padding: 8px;
+          padding: 6px;
         }
         
         #toolbar button {
-          padding: 8px 10px;
-          font-size: 11px;
-          min-width: 40px;
-          min-height: 40px;
+          width: 40px;
+          height: 40px;
+          font-size: 16px;
+          flex: 0 0 40px;
+        }
+        
+        #toolbar input[type="range"] {
+          width: 50px;
+          height: 18px;
         }
         
         #hud {
@@ -158,15 +185,15 @@
       <canvas id="view"></canvas>
       <div id="hud"></div>
       <div id="toolbar">
-        <button id="tool-attract" title="1">Притяжение</button>
-        <button id="tool-repel" title="2">Отталкивание</button>
-        <button id="tool-wall" title="3">Стена</button>
-        <button id="tool-erase" title="4">Ластик</button>
-        <button id="btn-pause" title="P">Пауза</button>
-        <button id="btn-reset">Сброс сцены</button>
-        <button id="btn-reseed">Новые семена</button>
+        <button id="tool-attract" title="Притяжение (1)">➕</button>
+        <button id="tool-repel" title="Отталкивание (2)">➖</button>
+        <button id="tool-wall" title="Стена (3)">⬛</button>
+        <button id="tool-erase" title="Ластик (4)">❌</button>
+        <button id="btn-pause" title="Пауза (P)">⏸️</button>
+        <button id="btn-reset" title="Сброс сцены">🔄</button>
+        <button id="btn-reseed" title="Новые семена">🎲</button>
         <label style="display:flex;align-items:center;gap:6px;color:#aab6c3;">
-          Темп
+          <span>Темп</span>
           <input id="tempo" type="range" min="0.2" max="3" step="0.1" value="1" />
         </label>
       </div>
