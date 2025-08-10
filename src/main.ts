@@ -124,10 +124,21 @@ reseedBtn.addEventListener('click', () => reseedAll());
  agents.reseedAgents();
 
 // Input drawing
-function canvasToFieldCoords(ev: MouseEvent) {
+function canvasToFieldCoords(ev: MouseEvent | TouchEvent) {
   const rect = canvas.getBoundingClientRect();
-  const x = ((ev.clientX - rect.left) / rect.width) * field.width;
-  const y = ((ev.clientY - rect.top) / rect.height) * field.height;
+  let clientX: number, clientY: number;
+  
+  if (ev instanceof TouchEvent) {
+    const touch = ev.touches[0] || ev.changedTouches[0];
+    clientX = touch.clientX;
+    clientY = touch.clientY;
+  } else {
+    clientX = ev.clientX;
+    clientY = ev.clientY;
+  }
+  
+  const x = ((clientX - rect.left) / rect.width) * field.width;
+  const y = ((clientY - rect.top) / rect.height) * field.height;
   return { x, y };
 }
 
@@ -141,7 +152,20 @@ canvas.addEventListener('mousemove', (e) => {
   if (isDrawing) handleTool(e);
 });
 
-function handleTool(e: MouseEvent) {
+// Touch events support for mobile devices
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault(); // Prevent scrolling
+  isDrawing = true;
+  handleTool(e);
+});
+window.addEventListener('touchend', () => (isDrawing = false));
+canvas.addEventListener('touchcancel', () => (isDrawing = false));
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault(); // Prevent scrolling
+  if (isDrawing) handleTool(e);
+});
+
+function handleTool(e: MouseEvent | TouchEvent) {
   const { x, y } = canvasToFieldCoords(e);
   if (tool === 'attract') field.addCircle(x, y, 8, +0.9);
   else if (tool === 'repel') {
