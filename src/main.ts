@@ -165,6 +165,7 @@ type Pulse = { x: number; y: number; age: number; duration: number; startR: numb
 const pulses: Pulse[] = [];
 let dashPhase = 0; // for marching-ants indication
 let arrowPhase = 0; // for flowing direction chevrons
+let progressSpeed = 0; // smoothed 0..1 for hint animation speed
 
 function resizeCanvasToViewport() {
   const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -232,9 +233,10 @@ function drawPulses(ctx: CanvasRenderingContext2D, dt: number) {
   ctx.restore();
 }
 
-function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay, progressRatio: number) {
-  if (dt <= 0 || progressRatio <= 0) return;
-  dashPhase = (dashPhase + dt * 60 * progressRatio) % 20; // animate dashes scaled by progress
+function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay) {
+  if (dt <= 0 || progressSpeed <= 0) return;
+  // advance smoothly without modulo to avoid visible wrap-back
+  dashPhase += dt * 60 * progressSpeed; // field-space units
   ctx.save();
   ctx.setLineDash([3, 3]);
   ctx.lineDashOffset = dashPhase;
@@ -256,7 +258,7 @@ function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay
 
 function drawDirectionHints(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay, progressRatio: number) {
   // Always show subtle direction on lines (connect_nodes), brighter with progress
-  if (dt > 0 && progressRatio > 0) arrowPhase = (arrowPhase + dt * 40 * progressRatio) % 1000;
+  if (dt > 0 && progressSpeed > 0) arrowPhase += dt * 40 * progressSpeed;
   ctx.save();
   for (const l of overlay.lines) {
     const vx = l.x2 - l.x1;
@@ -329,9 +331,12 @@ function frame(now: number) {
   drawOverlay(ctx, result.overlay, result.progressRatio);
   // Direction chevrons along connect_nodes line — help discover required flow direction
   drawDirectionHints(ctx, paused ? 0 : dt, result.overlay, result.progressRatio);
-  if (result.progressing) {
-    drawProgressingStyle(ctx, paused ? 0 : dt, result.overlay, result.progressRatio);
+  // Smooth the animation speed to avoid jitter due to fluctuating progress
+  if (!paused) {
+    const targetSpeed = result.progressing ? Math.max(0, Math.min(1, result.progressRatio)) : 0;
+    progressSpeed += (targetSpeed - progressSpeed) * 0.2; // exponential smoothing
   }
+  drawProgressingStyle(ctx, paused ? 0 : dt, result.overlay);
   if (result.completed && result.successTargets) {
     for (const t of result.successTargets) {
       pulses.push({ x: t.x, y: t.y, age: 0, duration: 0.8, startR: 4, endR: 22 });
