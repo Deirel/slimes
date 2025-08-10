@@ -98,7 +98,7 @@ export class GoalPlanner {
       id: this.nextId++, type,
       createdAt: nowSec, expiresAt: nowSec + lifetime,
       hintPhase: Math.random() * 1000, progressSec: 0,
-      requiredSec: type === 'connect_nodes' ? 18 : 14,
+      requiredSec: type === 'connect_nodes' ? 9 : 7,
     };
 
     if (type === 'connect_nodes') {
