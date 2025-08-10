@@ -18,9 +18,127 @@ const hud = new HUD(hudEl);
 const uiBuilder = new UIBuilder('ui-rows');
 let uiElements = uiBuilder.render(UI_CONFIG, []);
 const uiController = new UIController(uiElements);
+
+// Debug: scroll/viewport diagnostics
+function attachRowEventDebugging(rows: HTMLElement[]) {
+  rows.forEach((row) => {
+    if ((row as any)._debugHandlersAttached) return;
+    (row as any)._debugHandlersAttached = true;
+    const log = (type: string, ev: Event) => {
+      const anyEv = ev as any;
+      // eslint-disable-next-line no-console
+      console.log(`[scroll-debug] event ${type}`, {
+        type,
+        target: (ev.target as HTMLElement)?.className,
+        cancelable: ev.cancelable,
+        defaultPrevented: ev.defaultPrevented,
+        passive: anyEv?.passive ?? undefined,
+        pointerType: anyEv?.pointerType,
+        buttons: anyEv?.buttons,
+        deltaX: anyEv?.deltaX,
+        deltaY: anyEv?.deltaY,
+        scrollLeft: (row as HTMLElement).scrollLeft,
+      });
+    };
+    row.addEventListener('pointerdown', (e) => log('pointerdown', e), { passive: true });
+    row.addEventListener('pointermove', (e) => log('pointermove', e), { passive: true });
+    row.addEventListener('pointerup', (e) => log('pointerup', e), { passive: true });
+    row.addEventListener('pointercancel', (e) => log('pointercancel', e), { passive: true });
+    row.addEventListener('touchstart', (e) => log('touchstart', e), { passive: true });
+    row.addEventListener('touchmove', (e) => log('touchmove', e), { passive: true });
+    row.addEventListener('wheel', (e) => log('wheel', e), { passive: true });
+    row.addEventListener('scroll', (e) => log('scroll', e));
+  });
+}
+
+function logScrollDiagnostics(context: string) {
+  try {
+    const rowsContainer = document.getElementById('ui-rows');
+    const rows = Array.from(document.querySelectorAll('.ui-row')) as HTMLElement[];
+    const vp = {
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      dpr: window.devicePixelRatio || 1,
+      docClientW: document.documentElement?.clientWidth,
+      docClientH: document.documentElement?.clientHeight,
+    };
+    const env = {
+      userAgent: navigator.userAgent,
+      cssSupportsPanX: CSS.supports('touch-action', 'pan-x'),
+      bodyTouchAction: getComputedStyle(document.body).getPropertyValue('touch-action') || (getComputedStyle(document.body) as any).touchAction,
+      canvasZ: getComputedStyle(canvas).zIndex,
+    };
+    const canvasRect = canvas.getBoundingClientRect();
+    const uiRect = rowsContainer?.getBoundingClientRect();
+    // eslint-disable-next-line no-console
+    console.group(`[scroll-debug] ${context}`);
+    // eslint-disable-next-line no-console
+    console.log('viewport', vp);
+    // eslint-disable-next-line no-console
+    console.log('env', env);
+    // eslint-disable-next-line no-console
+    console.log('canvas rect', canvasRect);
+    // eslint-disable-next-line no-console
+    console.log('ui-rows rect', uiRect);
+    rows.forEach((row, idx) => {
+      const cs = getComputedStyle(row);
+      const info = {
+        index: idx,
+        clientWidth: row.clientWidth,
+        scrollWidth: row.scrollWidth,
+        offsetWidth: row.offsetWidth,
+        overflowX: cs.overflowX,
+        flexWrap: cs.flexWrap,
+        gap: cs.columnGap || cs.gap,
+        touchAction: (cs as any).touchAction || cs.getPropertyValue('touch-action'),
+        hasOverflow: row.scrollWidth > row.clientWidth,
+        childCount: row.children.length,
+      } as const;
+      // probe programmatic scroll
+      const before = row.scrollLeft;
+      row.scrollLeft = before + 40;
+      const after = row.scrollLeft;
+      row.scrollLeft = before;
+      const childWidths = Array.from(row.children).map((el) => {
+        const r = (el as HTMLElement).getBoundingClientRect();
+        return Math.round(r.width);
+      });
+      // eslint-disable-next-line no-console
+      console.log(`row#${idx}`, info, { childWidths, programmaticScrollWorked: after !== before, before, after });
+      // Try pointer capture toggle on the row's children to see if any capture prevents scroll
+      const firstChild = row.children[0] as HTMLElement | undefined;
+      if (firstChild) {
+        const handler = (ev: PointerEvent) => {
+          try {
+            if ((ev.target as HTMLElement)?.hasPointerCapture?.(ev.pointerId)) {
+              (ev.target as HTMLElement).releasePointerCapture(ev.pointerId);
+            }
+          } catch {}
+        };
+        firstChild.addEventListener('pointerdown', handler, { passive: true, once: true });
+      }
+    });
+    // hit-test a point in the row area (if present)
+    if (uiRect) {
+      const testX = Math.round(uiRect.left + Math.min(30, uiRect.width / 3));
+      const testY = Math.round(uiRect.top + uiRect.height / 2);
+      const el = document.elementFromPoint(testX, testY) as HTMLElement | null;
+      // eslint-disable-next-line no-console
+      console.log('elementFromPoint in row area', { x: testX, y: testY, tag: el?.tagName, class: el?.className });
+    }
+    // eslint-disable-next-line no-console
+    console.groupEnd();
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[scroll-debug] failed', e);
+  }
+}
+
 uiController.on('openPathChange', (openPath) => {
   uiElements = uiBuilder.render(UI_CONFIG, openPath);
   uiController.setElements(uiElements);
+  attachRowEventDebugging(Array.from(document.querySelectorAll('.ui-row')) as HTMLElement[]);
+  logScrollDiagnostics('after openPathChange render');
 });
 
 let field = new Field(320, 180);
@@ -155,9 +273,13 @@ window.addEventListener('resize', () => {
   agents.field = field;
   agents.reseedAgents();
   inputHandler.updateField(field);
+  attachRowEventDebugging(Array.from(document.querySelectorAll('.ui-row')) as HTMLElement[]);
+  logScrollDiagnostics('after resize');
 });
 
 resizeCanvasToViewport();
+attachRowEventDebugging(Array.from(document.querySelectorAll('.ui-row')) as HTMLElement[]);
+logScrollDiagnostics('initial');
 
 let lastTime = performance.now();
 let acc = 0;
