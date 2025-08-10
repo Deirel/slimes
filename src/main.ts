@@ -57,9 +57,18 @@ function togglePause() {
 let field = new Field(320, 180);
 
 function chooseAdaptiveResolution() {
-  const vw = Math.max(220, Math.min(520, Math.round(window.innerWidth / 5)));
-  const vh = Math.max(140, Math.min(300, Math.round(window.innerHeight / 5)));
-  return { w: vw, h: vh };
+  const cellSize = 5; // пикселей на клетку (сохраняем текущий размер клеток)
+  const w = Math.round(window.innerWidth / cellSize);  
+  const h = Math.round(window.innerHeight / cellSize);
+  
+  // Только минимальные ограничения для игрового процесса
+  const minW = 60;  // минимум для интерфейса
+  const minH = 60;  // минимум для интерфейса
+  
+  return { 
+    w: Math.max(minW, w), 
+    h: Math.max(minH, h) 
+  };
 }
 
 function resizeFieldToAdaptive() {
