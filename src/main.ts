@@ -241,7 +241,9 @@ function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay
   ctx.setLineDash([3, 3]);
   ctx.lineDashOffset = dashPhase;
   ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(220,250,255,0.9)';
+  const alpha = Math.max(0, Math.min(1, 0.95 * progressSpeed));
+  if (alpha <= 0.01) { ctx.restore(); return; }
+  ctx.strokeStyle = `rgba(220,250,255,${alpha})`;
   for (const c of overlay.circles) {
     ctx.beginPath();
     ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
