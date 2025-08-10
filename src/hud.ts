@@ -1,5 +1,6 @@
 import { AgentSystem } from './agents';
 import { Field } from './field';
+import { UI_CONFIG } from './ui-config';
 
 export class HUD {
   el: HTMLElement;
@@ -13,10 +14,10 @@ export class HUD {
 
   update(now: number, field: Field, agents: AgentSystem, toolName: string) {
     this.frameCounter++;
-    // Update FPS every 10 frames as per GDD
-    if (this.frameCounter >= 10) {
+    // Update FPS every N frames as configured
+    if (this.frameCounter >= UI_CONFIG.hud.fpsUpdateInterval) {
       const elapsed = now - this.lastFpsUpdate || 1;
-      this.fps = Math.round((10 * 1000) / elapsed);
+      this.fps = Math.round((UI_CONFIG.hud.fpsUpdateInterval * 1000) / elapsed);
       this.frameCounter = 0;
       this.lastFpsUpdate = now;
     }
