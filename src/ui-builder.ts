@@ -1,172 +1,124 @@
-import { UI_CONFIG, ToolType } from './ui-config';
-import { PopupConfig } from './types';
+import type { UIConfigV2, ControlSpec, ButtonSpec, ToggleSpec, SliderSpec, PopupButtonSpec } from './types';
 
-interface ButtonOptions {
-  id: string;
-  icon: string;
-  title: string;
-  className?: string;
-}
-
-interface SliderConfig {
-  type: 'slider';
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  default: number;
-  id: string;
-}
-
-export interface UIElements {
-  toolButtons: Record<ToolType, HTMLButtonElement>;
-  actionButtons: Record<string, HTMLButtonElement>;
-  controls: Record<string, HTMLInputElement>;
-  popupButtons: Record<string, HTMLButtonElement>;
-  popupPanels: Record<string, HTMLElement>;
+export interface UIElementsV2 {
+  container: HTMLElement;
+  controlRefs: Record<string, HTMLElement>;
 }
 
 export class UIBuilder {
-  private toolbar: HTMLElement;
-  
-  constructor(toolbarId: string = 'toolbar') {
-    this.toolbar = document.getElementById(toolbarId) || this.createToolbar();
+  private container: HTMLElement;
+
+  constructor(containerId: string = 'ui-rows') {
+    this.container = document.getElementById(containerId) || this.createContainer(containerId);
   }
-  
-  private createToolbar(): HTMLElement {
-    const toolbar = document.createElement('div');
-    toolbar.id = 'toolbar';
-    document.getElementById('app')?.appendChild(toolbar);
-    return toolbar;
+
+  private createContainer(id: string): HTMLElement {
+    const el = document.createElement('div');
+    el.id = id;
+    document.getElementById('app')?.appendChild(el);
+    return el;
   }
-  
-  buildFromConfig(config: typeof UI_CONFIG): UIElements {
-    this.toolbar.innerHTML = '';
-    const elements: UIElements = {
-      toolButtons: {} as Record<ToolType, HTMLButtonElement>,
-      actionButtons: {},
-      controls: {},
-      popupButtons: {},
-      popupPanels: {}
-    };
-    
-    // Создание кнопок инструментов
-    for (const [key, tool] of Object.entries(config.tools)) {
-      const btn = this.createButton({
-        id: `tool-${key}`,
-        icon: tool.icon,
-        title: `${tool.title} (${tool.hotkey})`,
-        className: 'tool-button'
+
+  render(config: UIConfigV2, openPath: string[]): UIElementsV2 {
+    this.container.innerHTML = '';
+    const controlRefs: Record<string, HTMLElement> = {};
+
+    const unit = config.layout.rowHeight - 2 * config.layout.gap;
+    const gap = config.layout.gap;
+    const rows: ControlSpec[][] = [];
+    rows.push(config.toolbar);
+
+    // build stacked rows according to openPath
+    let currentToolbar: ControlSpec[] | undefined = config.toolbar;
+    for (const popupId of openPath) {
+      const popup = currentToolbar?.find(c => c.type === 'popup' && c.id === popupId) as PopupButtonSpec | undefined;
+      if (!popup) break;
+      rows.push(popup.toolbar);
+      currentToolbar = popup.toolbar;
+    }
+
+    // render bottom-up (container uses column-reverse in CSS)
+    for (const rowControls of rows) {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'ui-row';
+      rowEl.style.height = `${config.layout.rowHeight}px`;
+      rowEl.style.padding = `${config.layout.gap}px`;
+      rowEl.style.gap = `${config.layout.gap}px`;
+      rowControls.forEach(spec => {
+        const el = this.createControl(spec, unit, gap);
+        rowEl.appendChild(el);
+        controlRefs[spec.id] = el;
       });
-      this.toolbar.appendChild(btn);
-      elements.toolButtons[key as ToolType] = btn;
+      this.container.appendChild(rowEl);
     }
-    
-    // Создание action кнопок
-    for (const [key, button] of Object.entries(config.buttons)) {
-      const btn = this.createButton({
-        id: button.id || `btn-${key}`,
-        icon: button.icon,
-        title: button.title + (button.hotkey ? ` (${button.hotkey.toUpperCase()})` : ''),
-        className: 'action-button'
-      });
-      this.toolbar.appendChild(btn);
-      elements.actionButtons[key] = btn;
-    }
-    
-    // Создание контролов
-    for (const [key, control] of Object.entries(config.controls)) {
-      if (control.type === 'slider') {
-        const element = this.createSlider(control);
-        this.toolbar.appendChild(element);
-        elements.controls[key] = element.querySelector('input') as HTMLInputElement;
-      }
-    }
-    
-    // Создание popup кнопок
-    if (config.popups) {
-      for (const [key, popup] of Object.entries(config.popups)) {
-        const popupContainer = this.createPopupButton(key, popup);
-        this.toolbar.appendChild(popupContainer);
-        elements.popupButtons[key] = popupContainer.querySelector('.popup-trigger') as HTMLButtonElement;
-        elements.popupPanels[key] = popupContainer.querySelector('.popup-panel') as HTMLElement;
-        
-        // Создание элементов внутри popup
-        const panel = elements.popupPanels[key];
-        if (popup.items.buttons) {
-          for (const [btnKey, btnConfig] of Object.entries(popup.items.buttons)) {
-            const btn = this.createButton({
-              id: `popup-${key}-btn-${btnKey}`,
-              icon: btnConfig.icon,
-              title: btnConfig.title,
-              className: 'popup-button'
-            });
-            panel.appendChild(btn);
-            elements.actionButtons[`${key}.${btnKey}`] = btn;
-          }
-        }
-        
-        if (popup.items.controls) {
-          for (const [ctrlKey, ctrlConfig] of Object.entries(popup.items.controls)) {
-            if (ctrlConfig.type === 'slider') {
-              const element = this.createSlider(ctrlConfig);
-              panel.appendChild(element);
-              elements.controls[ctrlKey] = element.querySelector('input') as HTMLInputElement;
-            }
-          }
-        }
-      }
-    }
-    
-    return elements;
+
+    return { container: this.container, controlRefs };
   }
-  
-  private createButton(options: ButtonOptions): HTMLButtonElement {
+
+  private createControl(spec: ControlSpec, unit: number, gap: number): HTMLElement {
+    switch (spec.type) {
+      case 'button': return this.createButton(spec as ButtonSpec, unit, gap);
+      case 'toggle': return this.createToggle(spec as ToggleSpec, unit, gap);
+      case 'slider': return this.createSlider(spec as SliderSpec, unit, gap);
+      case 'popup': return this.createPopupButton(spec as PopupButtonSpec, unit, gap);
+    }
+  }
+
+  private applySize(el: HTMLElement, units: number | undefined, unit: number, gap: number) {
+    const wUnits = Math.max(1, units ?? 1);
+    const widthPx = wUnits * unit + (wUnits - 1) * gap;
+    el.style.height = `${unit}px`;
+    el.style.minHeight = `${unit}px`;
+    el.style.minWidth = `${widthPx}px`;
+    el.style.width = `${widthPx}px`;
+  }
+
+  private createButton(spec: ButtonSpec, unit: number, gap: number): HTMLButtonElement {
     const btn = document.createElement('button');
-    btn.id = options.id;
-    btn.className = options.className || '';
-    btn.title = options.title;
-    btn.textContent = options.icon;
+    btn.className = 'ui-btn';
+    btn.id = `btn-${spec.id}`;
+    btn.title = spec.title;
+    btn.textContent = spec.icon;
+    this.applySize(btn, spec.units, unit, gap);
     return btn;
   }
-  
-  private createSlider(config: SliderConfig): HTMLElement {
-    const label = document.createElement('label');
-    label.style.cssText = 'display:flex;align-items:center;gap:6px;color:#aab6c3;';
-    
-    const span = document.createElement('span');
-    span.textContent = config.label;
-    
+
+  private createToggle(spec: ToggleSpec, unit: number, gap: number): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = 'ui-btn ui-toggle';
+    btn.id = `tgl-${spec.id}`;
+    btn.title = spec.title;
+    btn.textContent = spec.icon;
+    if (spec.initial) btn.classList.add('active');
+    this.applySize(btn, spec.units, unit, gap);
+    return btn;
+  }
+
+  private createSlider(spec: SliderSpec, unit: number, gap: number): HTMLElement {
+    const wrapper = document.createElement('label');
+    wrapper.className = 'ui-slider';
+    const name = document.createElement('span');
+    name.textContent = spec.title;
     const input = document.createElement('input');
     input.type = 'range';
-    input.id = config.id;
-    input.min = String(config.min);
-    input.max = String(config.max);
-    input.step = String(config.step);
-    input.value = String(config.default);
-    
-    label.appendChild(span);
-    label.appendChild(input);
-    return label;
+    input.min = String(spec.min);
+    input.max = String(spec.max);
+    input.step = String(spec.step);
+    input.value = String(spec.defaultValue);
+    input.id = `sld-${spec.id}`;
+    wrapper.appendChild(name);
+    wrapper.appendChild(input);
+    this.applySize(wrapper, spec.units, unit, gap);
+    return wrapper;
   }
-  
-  private createPopupButton(key: string, config: PopupConfig): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'popup-container';
-    
-    const trigger = document.createElement('button');
-    trigger.className = 'popup-trigger';
-    trigger.textContent = config.icon;
-    trigger.title = config.title;
-    trigger.id = `popup-${key}`;
-    
-    const panel = document.createElement('div');
-    panel.className = 'popup-panel hidden';
-    panel.id = `popup-panel-${key}`;
-    
-    container.appendChild(trigger);
-    container.appendChild(panel);
-    
-    return container;
+
+  private createPopupButton(spec: PopupButtonSpec, unit: number, gap: number): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = 'ui-btn ui-popup';
+    btn.id = `pop-${spec.id}`;
+    btn.title = spec.title;
+    btn.textContent = spec.icon;
+    this.applySize(btn, spec.units, unit, gap);
+    return btn;
   }
 }

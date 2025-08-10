@@ -1,4 +1,4 @@
-import { UI_CONFIG } from './ui-config';
+import { APP_CONFIG } from './app-config';
 import type { RenderOverlay } from './goals';
 
 interface Pulse {
@@ -20,21 +20,21 @@ export class VisualEffects {
     this.pulses.push({
       x, y,
       age: 0,
-      duration: UI_CONFIG.animation.pulsesDuration,
-      startR: UI_CONFIG.animation.pulseStartRadius,
-      endR: UI_CONFIG.animation.pulseEndRadius
+      duration: APP_CONFIG.animation.pulsesDuration,
+      startR: APP_CONFIG.animation.pulseStartRadius,
+      endR: APP_CONFIG.animation.pulseEndRadius
     });
   }
   
   update(dt: number, targetProgressSpeed: number) {
     // Обновление фаз анимации
     if (dt > 0 && this.progressSpeed > 0) {
-      this.dashPhase += dt * UI_CONFIG.animation.dashSpeed * this.progressSpeed;
-      this.arrowPhase += dt * UI_CONFIG.animation.arrowSpeed * this.progressSpeed;
+      this.dashPhase += dt * APP_CONFIG.animation.dashSpeed * this.progressSpeed;
+      this.arrowPhase += dt * APP_CONFIG.animation.arrowSpeed * this.progressSpeed;
     }
     
     // Сглаживание скорости прогресса
-    this.progressSpeed += (targetProgressSpeed - this.progressSpeed) * UI_CONFIG.animation.progressSmoothingFactor;
+    this.progressSpeed += (targetProgressSpeed - this.progressSpeed) * APP_CONFIG.animation.progressSmoothingFactor;
     
     // Обновление пульсов
     for (let i = this.pulses.length - 1; i >= 0; i--) {
@@ -60,8 +60,8 @@ export class VisualEffects {
     // Отрисовка кругов
     for (const c of overlay.circles) {
       ctx.beginPath();
-      const baseAlpha = UI_CONFIG.animation.goalOverlayBaseAlpha;
-      const progressAlpha = UI_CONFIG.animation.goalOverlayProgressAlpha;
+      const baseAlpha = APP_CONFIG.animation.goalOverlayBaseAlpha;
+      const progressAlpha = APP_CONFIG.animation.goalOverlayProgressAlpha;
       const a = Math.max(0, Math.min(1, c.alpha * (baseAlpha + progressAlpha * progressRatio)));
       ctx.strokeStyle = `rgba(180,220,255,${a})`;
       ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
@@ -71,8 +71,8 @@ export class VisualEffects {
     // Отрисовка линий
     for (const l of overlay.lines) {
       ctx.beginPath();
-      const baseAlpha = UI_CONFIG.animation.goalOverlayBaseAlpha;
-      const progressAlpha = UI_CONFIG.animation.goalOverlayProgressAlpha;
+      const baseAlpha = APP_CONFIG.animation.goalOverlayBaseAlpha;
+      const progressAlpha = APP_CONFIG.animation.goalOverlayProgressAlpha;
       const a = Math.max(0, Math.min(1, l.alpha * (baseAlpha + progressAlpha * progressRatio)));
       ctx.strokeStyle = `rgba(180,220,255,${a})`;
       ctx.moveTo(l.x1, l.y1);
@@ -118,8 +118,8 @@ export class VisualEffects {
       const len = Math.hypot(vx, vy) || 1;
       const nx = vx / len;
       const ny = vy / len;
-      const spacing = UI_CONFIG.animation.chevronSpacing;
-      const size = UI_CONFIG.animation.chevronSize;
+      const spacing = APP_CONFIG.animation.chevronSpacing;
+      const size = APP_CONFIG.animation.chevronSize;
       const baseAlpha = 0.28;
       const a = Math.max(0, Math.min(1, baseAlpha + 0.55 * progressRatio));
       const offset = this.arrowPhase % spacing;

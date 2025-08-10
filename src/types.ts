@@ -59,3 +59,50 @@ export interface PopupConfig {
     controls?: Record<string, ControlConfig>;
   };
 }
+
+// New row-based UI schema
+
+export interface UILayoutConfig {
+  rowHeight: number; // pixels
+  gap: number; // pixels; both vertical padding and horizontal spacing
+}
+
+export interface BaseControlSpec {
+  id: string;
+  title: string;
+  units?: number; // width measured in units; 1 unit = rowHeight - 2*gap
+  hotkey?: string;
+}
+
+export interface ButtonSpec extends BaseControlSpec {
+  type: 'button';
+  icon: string;
+}
+
+export interface ToggleSpec extends BaseControlSpec {
+  type: 'toggle';
+  icon: string;
+  group?: string; // e.g., 'tool' for exclusive tool selection
+  initial?: boolean;
+}
+
+export interface SliderSpec extends BaseControlSpec {
+  type: 'slider';
+  min: number;
+  max: number;
+  step: number;
+  defaultValue: number;
+}
+
+export interface PopupButtonSpec extends BaseControlSpec {
+  type: 'popup';
+  icon: string;
+  toolbar: ControlSpec[]; // child toolbar controls displayed in a new row above
+}
+
+export type ControlSpec = ButtonSpec | ToggleSpec | SliderSpec | PopupButtonSpec;
+
+export interface UIConfigV2 {
+  layout: UILayoutConfig;
+  toolbar: ControlSpec[]; // base row controls
+}

@@ -79,68 +79,62 @@ canvas {
   z-index: 10;
 }
 
-/* Toolbar */
-#toolbar {
+/* Row-based UI */
+#ui-rows {
   position: fixed;
+  left: var(--toolbar-offset);
   right: var(--toolbar-offset);
   bottom: var(--toolbar-offset);
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: var(--toolbar-gap);
-  background: var(--color-panel-bg);
-  padding: var(--toolbar-padding);
-  border-radius: var(--radius-medium);
-  backdrop-filter: var(--backdrop-blur);
   z-index: 10;
 }
-
-#toolbar button,
-#toolbar input[type="range"] {
-  cursor: pointer;
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: var(--toolbar-gap);
+  background: var(--color-panel-bg);
+  border-radius: var(--radius-medium);
+  backdrop-filter: var(--backdrop-blur);
+  overflow-x: auto;
 }
-
-#toolbar button {
+.ui-row::-webkit-scrollbar { height: 8px; }
+.ui-row::-webkit-scrollbar-thumb { background: #22313d; border-radius: 8px; }
+.ui-btn {
   background: var(--color-button-bg);
   color: var(--color-text);
   border: 1px solid var(--color-button-border);
   border-radius: var(--radius-medium);
-  padding: var(--button-padding);
-  font-size: var(--button-font-size);
-  min-height: var(--button-min-size);
-  min-width: var(--button-min-size);
+  font-size: var(--button-icon-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   transition: background-color var(--transition-speed);
 }
-
-#toolbar button:hover,
-#toolbar button:active {
-  background: var(--color-button-hover);
-}
-
-#toolbar button.active {
-  background: var(--color-button-active);
-  border-color: var(--color-button-border-active);
-}
-
-/* Range slider */
-#toolbar label {
-  display: flex;
+.ui-btn:hover, .ui-btn:active { background: var(--color-button-hover); }
+.ui-btn.active { background: var(--color-button-active); border-color: var(--color-button-border-active); }
+.ui-slider {
+  display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   color: var(--color-label-text);
-  font-size: var(--hud-font-size);
-  padding: 4px 0;
+  padding: 0 8px;
+  border: 1px solid var(--color-button-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-button-bg);
 }
-
-#toolbar input[type="range"] {
-  width: var(--slider-width);
-  height: var(--slider-height);
+.ui-slider > input[type="range"] {
+  width: 100%;
+  height: calc(100% - 12px);
   -webkit-appearance: none;
   appearance: none;
   background: var(--color-slider-bg);
   border-radius: 4px;
 }
-
-#toolbar input[type="range"]::-webkit-slider-thumb {
+.ui-slider > input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: var(--slider-thumb-size);
@@ -149,8 +143,7 @@ canvas {
   background: var(--color-slider-thumb);
   cursor: pointer;
 }
-
-#toolbar input[type="range"]::-moz-range-thumb {
+.ui-slider > input[type="range"]::-moz-range-thumb {
   width: var(--slider-thumb-size);
   height: var(--slider-thumb-size);
   border-radius: var(--radius-circle);
@@ -158,6 +151,8 @@ canvas {
   cursor: pointer;
   border: none;
 }
+
+/* legacy #toolbar styles removed */
 
 /* Mobile/Portrait адаптация */
 @media screen and (max-width: 768px), (max-height: 600px) {
@@ -168,51 +163,6 @@ canvas {
   
   canvas {
     height: calc(100vh - var(--mobile-toolbar-height));
-  }
-  
-  #toolbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: var(--mobile-toolbar-height);
-    display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
-    align-items: center;
-    padding: 8px;
-    gap: 4px;
-    max-width: none;
-    transform: none;
-    border-radius: 0;
-  }
-  
-  #toolbar button {
-    width: var(--button-min-size);
-    height: var(--button-min-size);
-    padding: 0;
-    font-size: var(--button-icon-size);
-    flex: 0 0 var(--button-min-size);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  #toolbar label {
-    flex: 0 0 auto;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 10px;
-    margin: 0;
-  }
-  
-  #toolbar label span {
-    text-align: center;
-  }
-  
-  #toolbar input[type="range"] {
-    width: 60px;
-    height: 20px;
   }
   
   #hud {
@@ -231,95 +181,6 @@ canvas {
     --button-icon-size: 16px;
   }
   
-  #toolbar {
-    padding: 6px;
-  }
-  
-  #toolbar input[type="range"] {
-    width: 50px;
-    height: 18px;
-  }
 }
 
-/* Popup styles */
-.popup-container {
-  position: relative;
-  display: inline-block;
-}
-
-.popup-panel {
-  position: absolute;
-  right: 100%;
-  bottom: 0;
-  margin-right: 8px;
-  background: var(--color-panel-bg);
-  border-radius: var(--radius-medium);
-  padding: var(--toolbar-padding);
-  backdrop-filter: var(--backdrop-blur);
-  display: flex;
-  flex-direction: column;
-  gap: var(--toolbar-gap);
-  min-width: 200px;
-  z-index: 20;
-  border: 1px solid var(--color-button-border);
-}
-
-.popup-panel.hidden {
-  display: none;
-}
-
-.popup-trigger {
-  background: var(--color-button-bg);
-  color: var(--color-text);
-  border: 1px solid var(--color-button-border);
-  border-radius: var(--radius-medium);
-  padding: var(--button-padding);
-  font-size: var(--button-font-size);
-  min-height: var(--button-min-size);
-  min-width: var(--button-min-size);
-  cursor: pointer;
-  transition: background-color var(--transition-speed);
-}
-
-.popup-trigger:hover,
-.popup-trigger:active {
-  background: var(--color-button-hover);
-}
-
-.popup-trigger.active {
-  background: var(--color-button-active);
-  border-color: var(--color-button-border-active);
-}
-
-.popup-button {
-  background: var(--color-button-bg);
-  color: var(--color-text);
-  border: 1px solid var(--color-button-border);
-  border-radius: var(--radius-medium);
-  padding: var(--button-padding);
-  font-size: var(--button-font-size);
-  min-height: var(--button-min-size);
-  cursor: pointer;
-  transition: background-color var(--transition-speed);
-}
-
-.popup-button:hover,
-.popup-button:active {
-  background: var(--color-button-hover);
-}
-
-.popup-button.active {
-  background: var(--color-button-active);
-  border-color: var(--color-button-border-active);
-}
-
-/* Mobile popup positioning */
-@media screen and (max-width: 768px) {
-  .popup-panel {
-    position: fixed;
-    right: 10px;
-    bottom: calc(var(--mobile-toolbar-height) + 10px);
-    left: 10px;
-    margin: 0;
-  }
-}
+/* Popup styles removed; popups are represented as stacked rows */

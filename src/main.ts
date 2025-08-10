@@ -4,6 +4,7 @@ import { HUD } from './hud';
 import type { SimParams } from './types';
 import { GoalPlanner, type UpdateResult } from './goals';
 import { UI_CONFIG, ToolType } from './ui-config';
+import { APP_CONFIG } from './app-config';
 import { InputHandler } from './input-handler';
 import { UIController } from './ui-controller';
 import { UIBuilder } from './ui-builder';
@@ -13,28 +14,29 @@ const canvas = document.getElementById('view') as HTMLCanvasElement;
 const hudEl = document.getElementById('hud') as HTMLElement;
 const hud = new HUD(hudEl);
 
-// Динамическое создание UI
-const uiBuilder = new UIBuilder('toolbar');
-const uiElements = uiBuilder.buildFromConfig(UI_CONFIG);
-
-// UIController теперь получает сгенерированные элементы
+// Динамическое создание UI по новой row-based системе
+const uiBuilder = new UIBuilder('ui-rows');
+let uiElements = uiBuilder.render(UI_CONFIG, []);
 const uiController = new UIController(uiElements);
+uiController.on('openPathChange', (openPath) => {
+  uiElements = uiBuilder.render(UI_CONFIG, openPath);
+  uiController.setElements(uiElements);
+});
 
 let field = new Field(320, 180);
 
 function chooseAdaptiveResolution() {
-  const cellSize = UI_CONFIG.canvas.cellSize;
-  
-  // Вычесть высоту панели управления на мобильных
-  const isMobile = window.innerWidth <= UI_CONFIG.mobile.breakpoint || window.innerHeight <= 600;
-  const toolbarHeight = isMobile ? UI_CONFIG.mobile.toolbarHeight : 0;
+  const cellSize = APP_CONFIG.canvas.cellSize;
+  // Вычесть фактическую высоту UI строк
+  const uiEl = document.getElementById('ui-rows');
+  const toolbarHeight = uiEl ? uiEl.getBoundingClientRect().height : 0;
   
   const w = Math.round(window.innerWidth / cellSize);  
   const h = Math.round((window.innerHeight - toolbarHeight) / cellSize);
   
   return { 
-    w: Math.max(UI_CONFIG.canvas.minFieldWidth, w), 
-    h: Math.max(UI_CONFIG.canvas.minFieldHeight, h) 
+    w: Math.max(APP_CONFIG.canvas.minFieldWidth, w), 
+    h: Math.max(APP_CONFIG.canvas.minFieldHeight, h) 
   };
 }
 
@@ -47,7 +49,7 @@ resizeFieldToAdaptive();
 
 // Input handler setup
 const inputHandler = new InputHandler(canvas, field, (pos, tool) => {
-  const config = UI_CONFIG.tools[tool];
+  const config: any = (APP_CONFIG.tools as any)[tool];
   if (tool === 'attract') {
     field.addCircle(pos.x, pos.y, config.radius, config.strength);
   } else if (tool === 'repel') {
@@ -62,34 +64,22 @@ const inputHandler = new InputHandler(canvas, field, (pos, tool) => {
 });
 
 // UI Controller event handlers
-uiController.on('toolChange', (tool) => {
-  inputHandler.setTool(tool);
-});
+uiController.on('toolChange', (tool) => { inputHandler.setTool(tool); });
 
 // Popup event handlers
 uiController.on('popupAction', (action, popupId, itemId) => {
+  if (popupId === 'root') {
+    if (itemId === 'reset') resetScene(true);
+    if (itemId === 'reseed') reseedAll();
+    return;
+  }
   if (popupId === 'advanced') {
-    if (itemId === 'save') {
-      // Save simulation state - placeholder for future implementation
-      console.log('Save state requested');
-    } else if (itemId === 'load') {
-      // Load simulation state - placeholder for future implementation  
-      console.log('Load state requested');
-    }
-  } else if (popupId === 'effects') {
-    if (itemId === 'rainbow') {
-      // Toggle rainbow mode - placeholder for future implementation
-      console.log('Rainbow mode toggled');
-    } else if (itemId === 'trails') {
-      // Toggle long trails mode - placeholder for future implementation
-      console.log('Long trails mode toggled');
-    }
-  } else if (popupId === 'control' && action === 'change') {
-    if (itemId === 'agentCount') {
-      // Handle agent count change - placeholder for future implementation
-      const newCount = parseInt((uiController as any).elements.popupControls.agentCount.value);
-      console.log(`Agent count changed to: ${newCount}`);
-    }
+    if (itemId === 'save') console.log('Save state requested');
+    if (itemId === 'load') console.log('Load state requested');
+  }
+  if (popupId === 'effects') {
+    if (itemId === 'rainbow') console.log('Rainbow mode toggled');
+    if (itemId === 'trails') console.log('Long trails mode toggled');
   }
 });
 
@@ -140,10 +130,6 @@ const agents = new AgentSystem(field, params);
    agents.reseedAgents();
  }
 
-// Bind reset and reseed buttons
-uiController.bindResetButton(() => resetScene(true));
-uiController.bindReseedButton(() => reseedAll());
-
  // Initial state: neutral field (dark), no random walls
  field.clearValues();
  agents.reseedAgents();
@@ -156,7 +142,7 @@ const goals = new GoalPlanner();
 const visualEffects = new VisualEffects();
 
 function resizeCanvasToViewport() {
-  const dpr = Math.max(1, Math.min(UI_CONFIG.canvas.maxDPR, window.devicePixelRatio || 1));
+  const dpr = Math.max(1, Math.min(APP_CONFIG.canvas.maxDPR, window.devicePixelRatio || 1));
   canvas.width = Math.floor(window.innerWidth * dpr);
   canvas.height = Math.floor(window.innerHeight * dpr);
   canvas.style.width = `${window.innerWidth}px`;
@@ -210,7 +196,7 @@ function frame(now: number) {
   renderer.renderField(field, agents.agents, now);
 
   // upscale to full view
-  const dpr = Math.max(1, Math.min(UI_CONFIG.canvas.maxDPR, window.devicePixelRatio || 1));
+  const dpr = Math.max(1, Math.min(APP_CONFIG.canvas.maxDPR, window.devicePixelRatio || 1));
   const scaleX = canvas.width / field.width;
   const scaleY = canvas.height / field.height;
   const ctx = (canvas.getContext('2d') as CanvasRenderingContext2D);
@@ -238,7 +224,8 @@ function frame(now: number) {
 
   ctx.restore();
 
-  hud.update(now, field, agents, UI_CONFIG.tools[uiController.currentTool].title);
+  // Show current tool id as title for now; can be mapped via UI_CONFIG if needed
+  hud.update(now, field, agents, uiController.currentTool);
   requestAnimationFrame(frame);
 }
 
