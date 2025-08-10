@@ -232,9 +232,9 @@ function drawPulses(ctx: CanvasRenderingContext2D, dt: number) {
   ctx.restore();
 }
 
-function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay) {
-  if (dt <= 0) return;
-  dashPhase = (dashPhase + dt * 60) % 20; // animate dashes
+function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay, progressRatio: number) {
+  if (dt <= 0 || progressRatio <= 0) return;
+  dashPhase = (dashPhase + dt * 60 * progressRatio) % 20; // animate dashes scaled by progress
   ctx.save();
   ctx.setLineDash([3, 3]);
   ctx.lineDashOffset = dashPhase;
@@ -256,7 +256,7 @@ function drawProgressingStyle(ctx: CanvasRenderingContext2D, dt: number, overlay
 
 function drawDirectionHints(ctx: CanvasRenderingContext2D, dt: number, overlay: RenderOverlay, progressRatio: number) {
   // Always show subtle direction on lines (connect_nodes), brighter with progress
-  if (dt > 0) arrowPhase = (arrowPhase + dt * 40) % 1000;
+  if (dt > 0 && progressRatio > 0) arrowPhase = (arrowPhase + dt * 40 * progressRatio) % 1000;
   ctx.save();
   for (const l of overlay.lines) {
     const vx = l.x2 - l.x1;
@@ -330,7 +330,7 @@ function frame(now: number) {
   // Direction chevrons along connect_nodes line — help discover required flow direction
   drawDirectionHints(ctx, paused ? 0 : dt, result.overlay, result.progressRatio);
   if (result.progressing) {
-    drawProgressingStyle(ctx, paused ? 0 : dt, result.overlay);
+    drawProgressingStyle(ctx, paused ? 0 : dt, result.overlay, result.progressRatio);
   }
   if (result.completed && result.successTargets) {
     for (const t of result.successTargets) {
