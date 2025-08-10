@@ -94,12 +94,6 @@ const params: SimParams = {
   flowDepositPerSecond: 0.9,
   flowDecayPerSecond: 0.12,
   flowMaxMagnitude: 2.0,
-  // Iteration 04 — rewards tuning
-  rewardEvapMaxReduction: 0.5,
-  rewardTurnNoiseMaxReduction: 0.55,
-  rewardDecayPerSecond: 0.015,
-  rewardDepositStrength: 0.7,
-  rewardRadius: 10,
 };
 
 const agents = new AgentSystem(field, params);
@@ -315,8 +309,6 @@ function frame(now: number) {
       field.decayMemory(Math.min(0.95, params.memoryDecayPerSecond * subDt));
       // Iteration 02: decay latent flow vectors over time
       field.decayFlow(Math.min(0.95, params.flowDecayPerSecond * subDt));
-      // Iteration 04: decay rewards
-      field.decayRewards(Math.min(0.95, params.rewardDecayPerSecond * subDt));
     }
   }
 
@@ -350,20 +342,6 @@ function frame(now: number) {
   if (result.completed && result.successTargets) {
     for (const t of result.successTargets) {
       pulses.push({ x: t.x, y: t.y, age: 0, duration: 0.8, startR: 4, endR: 22 });
-    }
-    // Iteration 04: apply indirect rewards near success areas
-    const strength = params.rewardDepositStrength;
-    if (result.successTargets.length === 1) {
-      const c = result.successTargets[0];
-      field.depositRewardCircle(c.x, c.y, params.rewardRadius, strength * params.rewardEvapMaxReduction, strength, params.rewardEvapMaxReduction);
-    } else if (result.successTargets.length === 2) {
-      const a = result.successTargets[0];
-      const b = result.successTargets[1];
-      // Along the corridor, focus more on evaporation reduction to keep it stable
-      field.depositRewardLine(a.x, a.y, b.x, b.y, params.rewardRadius, strength * params.rewardEvapMaxReduction, strength * 0.6, params.rewardEvapMaxReduction);
-      // reinforce endpoints slightly
-      field.depositRewardCircle(a.x, a.y, params.rewardRadius * 1.2, strength * params.rewardEvapMaxReduction, strength * 0.8, params.rewardEvapMaxReduction);
-      field.depositRewardCircle(b.x, b.y, params.rewardRadius * 1.2, strength * params.rewardEvapMaxReduction, strength * 0.8, params.rewardEvapMaxReduction);
     }
   }
   drawPulses(ctx, paused ? 0 : dt);

@@ -10,11 +10,6 @@ export class Field {
   // Iteration 02: latent flow vector field accumulating common directions
   flowX: Float32Array;
   flowY: Float32Array;
-  // Iteration 04: reward maps
-  // rewardEvap: 0..1 reduces local evaporation by up to configured fraction
-  rewardEvap: Float32Array;
-  // calm: 0..1 reduces local agent turn noise by up to configured fraction
-  calm: Float32Array;
 
   // working buffers for diffusion
   private tmp: Float32Array;
@@ -27,8 +22,6 @@ export class Field {
     this.memory = new Float32Array(width * height);
     this.flowX = new Float32Array(width * height);
     this.flowY = new Float32Array(width * height);
-    this.rewardEvap = new Float32Array(width * height);
-    this.calm = new Float32Array(width * height);
     this.tmp = new Float32Array(width * height);
   }
 
@@ -40,8 +33,6 @@ export class Field {
     this.memory = new Float32Array(width * height);
     this.flowX = new Float32Array(width * height);
     this.flowY = new Float32Array(width * height);
-    this.rewardEvap = new Float32Array(width * height);
-    this.calm = new Float32Array(width * height);
     this.tmp = new Float32Array(width * height);
   }
 
@@ -50,8 +41,6 @@ export class Field {
     this.memory.fill(0);
     this.flowX.fill(0);
     this.flowY.fill(0);
-    this.rewardEvap.fill(0);
-    this.calm.fill(0);
   }
 
   clearWalls() {
@@ -191,8 +180,7 @@ export class Field {
   }
 
   diffuseAndEvaporate(diffusion: number, evaporation: number, steps: number) {
-    // 5-point Laplacian with walls treated as reflecting boundaries.
-    // Iteration 04: local evaporation reduction via rewardEvap map.
+    // 5-point Laplacian with walls treated as reflecting boundaries
     for (let s = 0; s < steps; s++) {
       const w = this.width;
       const h = this.height;
@@ -211,9 +199,7 @@ export class Field {
 
           const lap = (vL + vR + vU + vD - 4 * v);
           let nv = v + diffusion * lap;
-          // Apply per-cell evaporation scaled by reward map (less evaporation where rewardEvap is high)
-          const localEvap = evaporation * (1 - Math.max(0, Math.min(1, this.rewardEvap[i])));
-          nv *= (1 - localEvap);
+          nv *= (1 - evaporation);
           dst[i] = clamp(nv, -2.5, 2.5);
         }
       }
@@ -260,65 +246,6 @@ export class Field {
     } else {
       this.flowX[idx] = fx;
       this.flowY[idx] = fy;
-    }
-  }
-
-  // Iteration 04: reward application and decay
-  decayRewards(decayPerStep: number) {
-    if (decayPerStep <= 0) return;
-    const keep = (1 - decayPerStep);
-    const re = this.rewardEvap;
-    const cm = this.calm;
-    for (let i = 0; i < re.length; i++) {
-      re[i] *= keep;
-      cm[i] *= keep;
-    }
-  }
-
-  depositRewardCircle(
-    xc: number,
-    yc: number,
-    radius: number,
-    amountEvap: number,
-    amountCalm: number,
-    maxEvapReduction: number = 1,
-  ) {
-    const r2 = radius * radius;
-    const x0 = Math.max(0, Math.floor(xc - radius));
-    const x1 = Math.min(this.width - 1, Math.ceil(xc + radius));
-    const y0 = Math.max(0, Math.floor(yc - radius));
-    const y1 = Math.min(this.height - 1, Math.ceil(yc + radius));
-    for (let y = y0; y <= y1; y++) {
-      const dy = y - yc;
-      for (let x = x0; x <= x1; x++) {
-        const dx = x - xc;
-        if (dx * dx + dy * dy <= r2) {
-          const idx = indexOf(x, y, this.width);
-          if (amountEvap !== 0) {
-            this.rewardEvap[idx] = clamp(this.rewardEvap[idx] + amountEvap, 0, Math.max(0, Math.min(1, maxEvapReduction)));
-          }
-          if (amountCalm !== 0) {
-            this.calm[idx] = clamp(this.calm[idx] + amountCalm, 0, 1);
-          }
-        }
-      }
-    }
-  }
-
-  depositRewardLine(
-    x1: number, y1: number, x2: number, y2: number,
-    radius: number, amountEvap: number, amountCalm: number,
-    maxEvapReduction: number = 1,
-  ) {
-    const dx = x2 - x1; const dy = y2 - y1;
-    const len = Math.hypot(dx, dy) || 1;
-    const step = Math.max(2, radius);
-    const n = Math.max(2, Math.floor(len / step));
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      const x = x1 + dx * t;
-      const y = y1 + dy * t;
-      this.depositRewardCircle(x, y, radius, amountEvap, amountCalm, maxEvapReduction);
     }
   }
 }

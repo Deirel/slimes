@@ -78,17 +78,10 @@ export class AgentSystem {
       else if (r > c && r > l) targetAngle = a.angle + 1;
       else targetAngle = a.angle;
 
-      // Apply turn speed toward target with noise (Iteration 04: local calm reduces noise)
+      // Apply turn speed toward target with noise
       const angleDiff = targetAngle - a.angle;
       const maxTurn = p.turnSpeed * dt;
-      // sample local calm map
-      const xiNoise = Math.max(0, Math.min(this.field.width - 1, Math.floor(a.x)));
-      const yiNoise = Math.max(0, Math.min(this.field.height - 1, Math.floor(a.y)));
-      const idxNoise = indexOf(xiNoise, yiNoise, this.field.width);
-      const calm = this.field.calm ? this.field.calm[idxNoise] : 0;
-      const noiseReduction = Math.max(0, Math.min(1, calm)) * (this.params.rewardTurnNoiseMaxReduction ?? 0);
-      const localTurnNoise = p.turnNoise * (1 - noiseReduction);
-      const turn = clamp(angleDiff, -maxTurn, maxTurn) + (Math.random() * 2 - 1) * localTurnNoise * dt;
+      const turn = clamp(angleDiff, -maxTurn, maxTurn) + (Math.random() * 2 - 1) * p.turnNoise * dt;
       a.angle = wrapAngle(a.angle + turn);
 
       // Move forward with latent flow influence (Iteration 02)
