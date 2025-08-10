@@ -31,4 +31,10 @@ export interface SimParams {
   flowDepositPerSecond: number; // how fast agents imprint direction into flow (units per second)
   flowDecayPerSecond: number; // exponential decay per second (0..1)
   flowMaxMagnitude: number; // clamp per-cell flow vector magnitude (px/s equivalent)
+  // Iteration 04 — indirect rewards tuning
+  rewardEvapMaxReduction: number; // 0..1: fraction reducing evaporation at peak reward
+  rewardTurnNoiseMaxReduction: number; // 0..1: fraction reducing turn noise at peak reward
+  rewardDecayPerSecond: number; // exponential decay per second (0..1)
+  rewardDepositStrength: number; // 0..1 per application
+  rewardRadius: number; // in field pixels
 }
