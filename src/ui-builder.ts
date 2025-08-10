@@ -1,4 +1,5 @@
 import { UI_CONFIG, ToolType } from './ui-config';
+import { PopupConfig } from './types';
 
 interface ButtonOptions {
   id: string;
@@ -21,6 +22,8 @@ export interface UIElements {
   toolButtons: Record<ToolType, HTMLButtonElement>;
   actionButtons: Record<string, HTMLButtonElement>;
   controls: Record<string, HTMLInputElement>;
+  popupButtons: Record<string, HTMLButtonElement>;
+  popupPanels: Record<string, HTMLElement>;
 }
 
 export class UIBuilder {
@@ -42,7 +45,9 @@ export class UIBuilder {
     const elements: UIElements = {
       toolButtons: {} as Record<ToolType, HTMLButtonElement>,
       actionButtons: {},
-      controls: {}
+      controls: {},
+      popupButtons: {},
+      popupPanels: {}
     };
     
     // Создание кнопок инструментов
@@ -78,6 +83,41 @@ export class UIBuilder {
       }
     }
     
+    // Создание popup кнопок
+    if (config.popups) {
+      for (const [key, popup] of Object.entries(config.popups)) {
+        const popupContainer = this.createPopupButton(key, popup);
+        this.toolbar.appendChild(popupContainer);
+        elements.popupButtons[key] = popupContainer.querySelector('.popup-trigger') as HTMLButtonElement;
+        elements.popupPanels[key] = popupContainer.querySelector('.popup-panel') as HTMLElement;
+        
+        // Создание элементов внутри popup
+        const panel = elements.popupPanels[key];
+        if (popup.items.buttons) {
+          for (const [btnKey, btnConfig] of Object.entries(popup.items.buttons)) {
+            const btn = this.createButton({
+              id: `popup-${key}-btn-${btnKey}`,
+              icon: btnConfig.icon,
+              title: btnConfig.title,
+              className: 'popup-button'
+            });
+            panel.appendChild(btn);
+            elements.actionButtons[`${key}.${btnKey}`] = btn;
+          }
+        }
+        
+        if (popup.items.controls) {
+          for (const [ctrlKey, ctrlConfig] of Object.entries(popup.items.controls)) {
+            if (ctrlConfig.type === 'slider') {
+              const element = this.createSlider(ctrlConfig);
+              panel.appendChild(element);
+              elements.controls[ctrlKey] = element.querySelector('input') as HTMLInputElement;
+            }
+          }
+        }
+      }
+    }
+    
     return elements;
   }
   
@@ -108,5 +148,25 @@ export class UIBuilder {
     label.appendChild(span);
     label.appendChild(input);
     return label;
+  }
+  
+  private createPopupButton(key: string, config: PopupConfig): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'popup-container';
+    
+    const trigger = document.createElement('button');
+    trigger.className = 'popup-trigger';
+    trigger.textContent = config.icon;
+    trigger.title = config.title;
+    trigger.id = `popup-${key}`;
+    
+    const panel = document.createElement('div');
+    panel.className = 'popup-panel hidden';
+    panel.id = `popup-panel-${key}`;
+    
+    container.appendChild(trigger);
+    container.appendChild(panel);
+    
+    return container;
   }
 }

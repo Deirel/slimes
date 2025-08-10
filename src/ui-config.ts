@@ -1,20 +1,4 @@
-interface ButtonConfig {
-  icon: string;
-  title: string;
-  hotkey?: string;
-  action?: 'toggle' | 'trigger';
-  id?: string;
-}
-
-interface ControlConfig {
-  type: 'slider';
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  default: number;
-  id: string;
-}
+import { ButtonConfig, ControlConfig, PopupConfig } from './types';
 
 export const UI_CONFIG = {
   tools: {
@@ -79,6 +63,32 @@ export const UI_CONFIG = {
       step: 0.1,
       default: 1,
       id: 'tempo' 
+    }
+  },
+
+  popups: {
+    advanced: {
+      icon: '⚙️',
+      title: 'Расширенные настройки',
+      items: {
+        buttons: {
+          save: { icon: '💾', title: 'Сохранить состояние', action: 'trigger' as const },
+          load: { icon: '📁', title: 'Загрузить состояние', action: 'trigger' as const }
+        },
+        controls: {
+          agentCount: { type: 'slider' as const, label: 'Агенты', min: 100, max: 5000, step: 100, default: 1000, id: 'agentCount' }
+        }
+      }
+    },
+    effects: {
+      icon: '✨',
+      title: 'Эффекты',
+      items: {
+        buttons: {
+          rainbow: { icon: '🌈', title: 'Радужный режим', action: 'toggle' as const },
+          trails: { icon: '〰️', title: 'Длинные следы', action: 'toggle' as const }
+        }
+      }
     }
   },
   

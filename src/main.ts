@@ -66,6 +66,33 @@ uiController.on('toolChange', (tool) => {
   inputHandler.setTool(tool);
 });
 
+// Popup event handlers
+uiController.on('popupAction', (action, popupId, itemId) => {
+  if (popupId === 'advanced') {
+    if (itemId === 'save') {
+      // Save simulation state - placeholder for future implementation
+      console.log('Save state requested');
+    } else if (itemId === 'load') {
+      // Load simulation state - placeholder for future implementation  
+      console.log('Load state requested');
+    }
+  } else if (popupId === 'effects') {
+    if (itemId === 'rainbow') {
+      // Toggle rainbow mode - placeholder for future implementation
+      console.log('Rainbow mode toggled');
+    } else if (itemId === 'trails') {
+      // Toggle long trails mode - placeholder for future implementation
+      console.log('Long trails mode toggled');
+    }
+  } else if (popupId === 'control' && action === 'change') {
+    if (itemId === 'agentCount') {
+      // Handle agent count change - placeholder for future implementation
+      const newCount = parseInt((uiController as any).elements.popupControls.agentCount.value);
+      console.log(`Agent count changed to: ${newCount}`);
+    }
+  }
+});
+
 const params: SimParams = {
   diffusionBase: 0.22,
   evaporationBase: 0.035,

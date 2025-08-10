@@ -32,3 +32,30 @@ export interface SimParams {
   flowDecayPerSecond: number; // exponential decay per second (0..1)
   flowMaxMagnitude: number; // clamp per-cell flow vector magnitude (px/s equivalent)
 }
+
+export interface ButtonConfig {
+  icon: string;
+  title: string;
+  hotkey?: string;
+  action?: 'toggle' | 'trigger';
+  id?: string;
+}
+
+export interface ControlConfig {
+  type: 'slider';
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+  id: string;
+}
+
+export interface PopupConfig {
+  icon: string;
+  title: string;
+  items: {
+    buttons?: Record<string, ButtonConfig>;
+    controls?: Record<string, ControlConfig>;
+  };
+}
