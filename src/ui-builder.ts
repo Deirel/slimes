@@ -44,6 +44,9 @@ export class UIBuilder {
       rowEl.style.height = `${config.layout.rowHeight}px`;
       rowEl.style.padding = `${config.layout.gap}px`;
       rowEl.style.gap = `${config.layout.gap}px`;
+      rowEl.style.boxSizing = 'border-box';
+      rowEl.style.flexWrap = 'nowrap';
+      rowEl.style.overflowX = 'auto';
       rowControls.forEach(spec => {
         const el = this.createControl(spec, unit, gap);
         rowEl.appendChild(el);

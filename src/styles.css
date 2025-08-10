@@ -98,6 +98,9 @@ canvas {
   border-radius: var(--radius-medium);
   backdrop-filter: var(--backdrop-blur);
   overflow-x: auto;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .ui-row::-webkit-scrollbar { height: 8px; }
 .ui-row::-webkit-scrollbar-thumb { background: #22313d; border-radius: 8px; }
@@ -112,6 +115,7 @@ canvas {
   justify-content: center;
   cursor: pointer;
   transition: background-color var(--transition-speed);
+  flex: 0 0 auto; /* prevent shrinking so overflow activates */
 }
 .ui-btn:hover, .ui-btn:active { background: var(--color-button-hover); }
 .ui-btn.active { background: var(--color-button-active); border-color: var(--color-button-border-active); }
@@ -125,6 +129,7 @@ canvas {
   border: 1px solid var(--color-button-border);
   border-radius: var(--radius-medium);
   background: var(--color-button-bg);
+  flex: 0 0 auto; /* prevent shrinking so overflow activates */
 }
 .ui-slider > input[type="range"] {
   width: 100%;
@@ -133,6 +138,7 @@ canvas {
   appearance: none;
   background: var(--color-slider-bg);
   border-radius: 4px;
+  touch-action: none; /* prioritize slider drag over row scroll */
 }
 .ui-slider > input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
